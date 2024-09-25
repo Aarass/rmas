@@ -2,6 +2,7 @@ package com.example.rmas
 
 import android.content.ContentValues
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore.Images
@@ -11,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts.TakePicture
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
@@ -40,6 +42,7 @@ class MainActivity : ComponentActivity() {
         Toast.makeText(this, string, Toast.LENGTH_LONG).show()
     }
 
+    @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         lifecycleScope.launch {
             mainViewModel.takeImageEvent.collect() {
@@ -58,12 +61,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             RMASTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    RouterOutlet()
+                    RouterOutlet(contentResolver = contentResolver)
                 }
             }
         }
     }
-
 
     private var selectedImageUri: Uri? = null
     private fun dispatchTakePictureIntent() {

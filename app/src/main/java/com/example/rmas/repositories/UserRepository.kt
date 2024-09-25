@@ -1,26 +1,41 @@
 package com.example.rmas.repositories
 
 import android.net.Uri
-import android.util.Log
-import android.widget.Toast
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FieldValue.serverTimestamp
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 
 class UserRepository {
     private var auth: FirebaseAuth = Firebase.auth
+    private val db: FirebaseFirestore = Firebase.firestore
 
-    suspend fun createUser(email: String, password: String): FirebaseUser? {
-        return auth.createUserWithEmailAndPassword(email, password).await().user
+    suspend fun createUser(email: String, password: String): FirebaseUser {
+        val user = auth.createUserWithEmailAndPassword(email, password).await().user ?: throw Exception("Couldn't create user")
+
+        db.collection("users").document(user.uid).set(hashMapOf(
+            "createdAt" to serverTimestamp()
+        ))
+
+        return user
     }
 
-    suspend fun addUserInfo(user: FirebaseUser,name: String, surname: String, phoneNumber: String) {
-        throw NotImplementedError()
+    suspend fun setUserInfo(user: FirebaseUser, name: String, surname: String, phoneNumber: String) {
+        db.runBatch { batch ->
+            val documentRef = db.collection(("users")).document(user.uid);
+
+            batch
+                .update(documentRef, "name", name)
+                .update(documentRef, "surname", surname)
+                .update(documentRef, "phoneNumber", phoneNumber)
+        }.await()
     }
 
-    suspend fun addUserImage(user: FirebaseUser, imageUri: Uri) {
-        throw NotImplementedError()
+    suspend fun setUserProfileImage(user: FirebaseUser, imageUrl: Uri) {
+        db.collection(("users")).document(user.uid).update("imageUrl", imageUrl.toString())
     }
 }

@@ -75,6 +75,8 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.firebase.ui.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
     implementation(libs.coil.compose)
 
     // TODO: Add the dependencies for Firebase products you want to use

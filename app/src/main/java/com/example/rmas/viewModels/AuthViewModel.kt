@@ -1,44 +1,109 @@
 package com.example.rmas.viewModels
 
+import android.content.ContentResolver
 import android.net.Uri
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.rmas.enums.AuthStatus
 import com.example.rmas.errors.ErrorHandler
 import com.example.rmas.repositories.ServiceLocator
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
-class AuthViewModel(): ViewModel() {
+class AuthViewModel: ViewModel() {
+    private var auth: FirebaseAuth = Firebase.auth
+
     private val errorHandler = ErrorHandler(coroutineScope = viewModelScope)
     val errors = errorHandler.errors
 
-    private val userRepository = ServiceLocator.userRepository;
-    private val imageRepository = ServiceLocator.imageRepository;
+    private val userRepository = ServiceLocator.userRepository
+    private val imageRepository = ServiceLocator.imageRepository
 
-    fun signIn(username: String, password: String) {
-        // TODO
-    }
+    private val _isSigningUp = MutableStateFlow(false)
+    val isSigningUp = _isSigningUp.asStateFlow()
 
-    fun signUp(name: String, surname: String, phoneNumber: String, email: String, password: String, imageUri: Uri) {
+    private val _isSigningIn= MutableStateFlow(false)
+    val isSigningIn = _isSigningIn.asStateFlow()
+
+    private val _authStatus = MutableStateFlow(AuthStatus.NotLogedIn)
+    val onAuthStatusChange = _authStatus.asSharedFlow().drop(1)
+    val authStatus = _authStatus.asStateFlow()
+
+    fun signIn(email: String, password: String) {
         viewModelScope.launch {
-            try {
-                userRepository.createUser(email, password)?.also { user ->
-                    imageRepository.uploadImage(imageUri)
+            setIsSigningIn(true)
 
-                    userRepository.addUserInfo(
-                        user = user,
-                        name = name,
-                        surname = surname,
-                        phoneNumber = phoneNumber
-                    )
-                    
-                    userRepository.addUserImage(
-                        user = user,
-                        imageUri = imageUri
-                    )
-                } ?: throw Exception("Couldn't create user")
+            try {
+                auth.signInWithEmailAndPassword(email, password).await()
+                _authStatus.value = AuthStatus.LogedIn
+
             } catch (e: Exception) {
                 errorHandler.showError(e)
+            } finally {
+                setIsSigningIn(false)
             }
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.P)
+    fun signUp(name: String, surname: String, phoneNumber: String, email: String, password: String, imageUri: Uri, contentResolver: ContentResolver) {
+        viewModelScope.launch {
+            setIsSigningUp(true)
+            try {
+                val user = userRepository.createUser(email, password)
+
+                listOf(
+                    async {
+                        userRepository.setUserInfo(
+                            user = user,
+                            name = name,
+                            surname = surname,
+                            phoneNumber = phoneNumber
+                        )
+                    },
+                    async {
+                        val uploadedImageUrl = imageRepository.uploadImage(user, imageUri, contentResolver)
+                        userRepository.setUserProfileImage(
+                            user = user,
+                            imageUrl = uploadedImageUrl
+                        )
+                    }
+                ).awaitAll()
+
+                _authStatus.value = AuthStatus.LogedIn
+
+            } catch (e: Exception) {
+                errorHandler.showError(e)
+            } finally {
+                setIsSigningUp(false)
+            }
+        }
+    }
+
+    private fun setIsSigningIn(value: Boolean) {
+        viewModelScope.launch {
+            _isSigningIn.emit(value)
+        }
+    }
+
+    private fun setIsSigningUp(value: Boolean) {
+        _isSigningUp.value = value
+    }
+
+    fun signOut() {
+        auth.signOut()
+        _authStatus.value = AuthStatus.NotLogedIn
     }
 }
