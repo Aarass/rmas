@@ -29,9 +29,17 @@ fun RouterOutlet(contentResolver: ContentResolver) {
         authViewModel.onAuthStatusChange.collect() {
             Log.i("router", it.toString())
             if (it == AuthStatus.LogedIn) {
-                navController.navigate(Routes.homeScreen)
+                navController.navigate(Routes.homeScreen) {
+                    popUpTo(navController.graph.id) {
+                        inclusive = true
+                    }
+                }
             } else {
-                navController.navigate(Routes.signInScreen)
+                navController.navigate(Routes.signInScreen) {
+                    popUpTo(navController.graph.id) {
+                        inclusive = true
+                    }
+                }
             }
         }
     }

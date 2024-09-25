@@ -18,7 +18,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -38,8 +37,16 @@ class AuthViewModel: ViewModel() {
     val isSigningIn = _isSigningIn.asStateFlow()
 
     private val _authStatus = MutableStateFlow(AuthStatus.NotLogedIn)
-    val onAuthStatusChange = _authStatus.asSharedFlow().drop(1)
+    val onAuthStatusChange = _authStatus.asSharedFlow()
+        //.drop(1)
     val authStatus = _authStatus.asStateFlow()
+
+    fun tryToRestoreSession() {
+        if (auth.currentUser != null) {
+            _authStatus.value = AuthStatus.LogedIn
+        }
+        Log.i("auth", auth.currentUser?.uid ?: "no user")
+    }
 
     fun signIn(email: String, password: String) {
         viewModelScope.launch {

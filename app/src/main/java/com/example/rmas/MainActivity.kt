@@ -56,6 +56,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -66,6 +67,13 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onStart() {
+        super.onStart()
+
+        authViewModel.tryToRestoreSession()
+    }
+
 
     private var selectedImageUri: Uri? = null
     private fun dispatchTakePictureIntent() {
