@@ -11,15 +11,22 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.rmas.enums.AuthStatus
-import com.example.rmas.screens.Home
+import com.example.rmas.screens.home.Home
+import com.example.rmas.screens.Profile
 import com.example.rmas.screens.SignIn
 import com.example.rmas.screens.SignUp
 import com.example.rmas.viewModels.AuthViewModel
 import com.example.rmas.viewModels.MainViewModel
 
-@RequiresApi(Build.VERSION_CODES.P)
+private object MainRoutes {
+    const val SIGN_IN_SCREEN = "SignInScreen"
+    const val SIGN_UP_SCREEN = "SignUpScreen"
+    const val HOME_SCREEN = "HomeScreen"
+    const val PROFILE_SCREEN = "ProfileScreen"
+}
+
 @Composable
-fun RouterOutlet(contentResolver: ContentResolver) {
+fun MainRouterOutlet(contentResolver: ContentResolver) {
     val navController = rememberNavController()
 
     val mainViewModel = viewModel<MainViewModel>()
@@ -29,13 +36,13 @@ fun RouterOutlet(contentResolver: ContentResolver) {
         authViewModel.onAuthStatusChange.collect() {
             Log.i("router", it.toString())
             if (it == AuthStatus.LogedIn) {
-                navController.navigate(Routes.homeScreen) {
+                navController.navigate(MainRoutes.HOME_SCREEN) {
                     popUpTo(navController.graph.id) {
                         inclusive = true
                     }
                 }
             } else {
-                navController.navigate(Routes.signInScreen) {
+                navController.navigate(MainRoutes.SIGN_IN_SCREEN) {
                     popUpTo(navController.graph.id) {
                         inclusive = true
                     }
@@ -44,19 +51,19 @@ fun RouterOutlet(contentResolver: ContentResolver) {
         }
     }
 
-    NavHost(navController, startDestination = Routes.signInScreen) {
-        composable(Routes.signInScreen) {
+    NavHost(navController, startDestination = MainRoutes.SIGN_IN_SCREEN) {
+        composable(MainRoutes.SIGN_IN_SCREEN) {
             SignIn(
-                navigateToSignUpScreen = { navController.navigate(Routes.signUpScreen) },
+                navigateToSignUpScreen = { navController.navigate(MainRoutes.SIGN_UP_SCREEN) },
                 signIn = {email, password ->
                     authViewModel.signIn(email, password)
                 },
                 isSigningInFlow = authViewModel.isSigningIn,
             )
         }
-        composable(Routes.signUpScreen) {
+        composable(MainRoutes.SIGN_UP_SCREEN) {
             SignUp(
-                navigateToSignInScreen = { navController.navigate(Routes.signInScreen) },
+                navigateToSignInScreen = { navController.navigate(MainRoutes.SIGN_IN_SCREEN) },
                 openCamera = { mainViewModel.takePicture() },
                 clearSelectedImage = { mainViewModel.clearSelectedImageUri() },
                 imageUriFlow = mainViewModel.selectedImageUri,
@@ -66,8 +73,13 @@ fun RouterOutlet(contentResolver: ContentResolver) {
                 isSigningUpFlow = authViewModel.isSigningUp,
             )
         }
-        composable(Routes.homeScreen) {
-            Home(signOut ={ authViewModel.signOut() })
+        composable(MainRoutes.HOME_SCREEN) {
+            Home(
+                openProfile = { navController.navigate(MainRoutes.PROFILE_SCREEN)}
+            )
+        }
+        composable(MainRoutes.PROFILE_SCREEN) {
+            Profile(signOut ={ authViewModel.signOut() })
         }
     }
 }
