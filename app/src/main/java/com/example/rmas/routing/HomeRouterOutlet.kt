@@ -19,7 +19,7 @@ object HomeRoutes {
 
 @Composable
 fun HomeRouterOutlet(innerPadding: PaddingValues, navController: NavHostController, openProfile: () -> Unit) {
-    NavHost(navController, startDestination = HomeRoutes.MAP_SCREEN) {
+    NavHost(navController, startDestination = HomeRoutes.USERS_SCREEN) {
         composable(HomeRoutes.MAP_SCREEN) {
             Map(innerPadding, openProfile)
         }

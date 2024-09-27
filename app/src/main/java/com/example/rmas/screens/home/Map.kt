@@ -1,5 +1,6 @@
 package com.example.rmas.screens.home
 
+import android.app.Activity
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -24,13 +25,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.clearCompositionErrors
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.rmas.ui.theme.resetSystemNavigationTheme
+import com.example.rmas.ui.theme.setDarkStatusBarIcons
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.CameraPosition
@@ -46,6 +53,8 @@ import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
 fun Map(innerPadding: PaddingValues, openProfile: () -> Unit) {
+    val context = (LocalContext.current as Activity).window
+
     val nis = LatLng(43.321445, 21.896104)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(nis, 15f)
@@ -149,5 +158,12 @@ fun Map(innerPadding: PaddingValues, openProfile: () -> Unit) {
 
         }
 
+    }
+
+    DisposableEffect(LocalLifecycleOwner.current) {
+        setDarkStatusBarIcons(context)
+        onDispose {
+            resetSystemNavigationTheme(context)
+        }
     }
 }

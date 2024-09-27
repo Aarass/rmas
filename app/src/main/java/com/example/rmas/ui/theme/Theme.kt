@@ -5,6 +5,7 @@ import android.app.Application
 import android.os.Build
 import android.util.Log
 import android.view.View
+import android.view.Window
 import android.view.WindowManager
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -19,7 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
+    primary = Blue40,
     secondary = PurpleGrey80,
     tertiary = Pink80
 )
@@ -56,43 +57,13 @@ fun RMASTheme(
         else -> LightColorScheme
     }
 
-    colorScheme = LightColorScheme;
+//    colorScheme = LightColorScheme;
 
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Build.VERSION.SDK_INT < Build.VERSION_CODES.R)  {
-        val window = (LocalContext.current as Activity).window
-
-        @Suppress("DEPRECATION")
-        window.decorView.systemUiVisibility =
-            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
-                    View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-
-
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-
-        if (Build.VERSION.SDK_INT >= 29) {
-            window.isNavigationBarContrastEnforced = false
-        }
-
-        // 4
-
+//    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Build.VERSION.SDK_INT < Build.VERSION_CODES.R)  {
 //        window.statusBarColor = colorScheme.background.toArgb()
 //        window.navigationBarColor = colorScheme.background.toArgb()
-//
-//        val r = colorScheme.background.red
-//        val g = colorScheme.background.green
-//        val b = colorScheme.background.blue
-//
-//        val tmp = Color(r, g, b, 1f)
-//        val tmp2 = tmp.toArgb()
-//
-//        Log.i("Raw", colorScheme.background.toString())
-//        Log.i("Raw", colorScheme.background.toArgb().toString())
-//
-//        Log.i("Raw", tmp.toString())
-//        Log.i("Raw", tmp2.toString())
-//
-    }
+//    }
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -100,3 +71,25 @@ fun RMASTheme(
         content = content
     )
 }
+
+var systemUiVisibilityDefaultValue: Int? = null;
+// 10000 light
+// 1792 dark
+
+@Suppress("DEPRECATION")
+fun setDarkStatusBarIcons(window: Window) {
+    systemUiVisibilityDefaultValue = window.decorView.systemUiVisibility
+
+    window.decorView.systemUiVisibility =
+        window.decorView.systemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+}
+
+@Suppress("DEPRECATION")
+fun resetSystemNavigationTheme(window: Window) {
+    systemUiVisibilityDefaultValue?.let {
+        window.decorView.systemUiVisibility = it
+    } ?: Log.e("ui visibility", "default is null")
+}
+
+//    WindowCompat.setDecorFitsSystemWindows(window, false)
+//    WindowCompat.setDecorFitsSystemWindows(window, false)
