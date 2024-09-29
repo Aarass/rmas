@@ -17,7 +17,6 @@ import java.io.ByteArrayOutputStream
 class ImageRepository {
     private val storage: FirebaseStorage = Firebase.storage
 
-    @RequiresApi(Build.VERSION_CODES.P)
     suspend fun uploadImage(user: FirebaseUser, imageUri: Uri, contentResolver: ContentResolver): Uri {
         val source = ImageDecoder.createSource(contentResolver, imageUri)
         val bitmap = ImageDecoder.decodeBitmap(source)

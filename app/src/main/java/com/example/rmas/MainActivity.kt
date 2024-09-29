@@ -7,9 +7,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore.Images
-import android.view.View
-import android.view.WindowInsetsController
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -19,12 +16,8 @@ import androidx.activity.result.contract.ActivityResultContracts.TakePicture
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.rmas.routing.MainRouterOutlet
 import com.example.rmas.ui.theme.RMASTheme
@@ -39,7 +32,7 @@ class MainActivity : ComponentActivity() {
     private val launcher = registerForActivityResult(TakePicture()) { isSuccess ->
         if (isSuccess) {
             val selectedImageUriCopy = selectedImageUri
-                ?: throw Exception("Image uri is null after successful intent");
+                ?: throw Exception("Image uri is null after successful intent")
 
             mainViewModel.setSelectedImageUri(selectedImageUriCopy)
         } else {
@@ -54,13 +47,13 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         lifecycleScope.launch {
-            mainViewModel.takeImageEvent.collect() {
+            mainViewModel.takeImageEvent.collect {
                 dispatchTakePictureIntent()
             }
         }
 
         lifecycleScope.launch {
-            authViewModel.errors.collect() {
+            authViewModel.errors.collect {
                 toast(it)
             }
         }
@@ -71,19 +64,6 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= 29) {
             window.isNavigationBarContrastEnforced = false
         }
-
-//        window.statusBarColor = Color.TRANSPARENT
-//        window.navigationBarColor = Color.TRANSPARENT
-
-//        window.clearFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-
-        // Ovo kao radi
-//        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-//        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
-//        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION)
-//        window.statusBarColor = Color.TRANSPARENT
-//        window.navigationBarColor = Color.TRANSPARENT
-
         setContent {
             RMASTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -110,7 +90,7 @@ class MainActivity : ComponentActivity() {
 
         val imageUri: Uri = contentResolver.insert(Images.Media.EXTERNAL_CONTENT_URI, contentValues)
             ?: throw Exception("Couldn't reserve space for the future image")
-        selectedImageUri = imageUri;
+        selectedImageUri = imageUri
 
         launcher.launch(imageUri)
     }

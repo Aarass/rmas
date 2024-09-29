@@ -22,13 +22,16 @@ import androidx.core.view.WindowCompat
 private val DarkColorScheme = darkColorScheme(
     primary = Blue40,
     secondary = PurpleGrey80,
-    tertiary = Pink80
+    tertiary = Pink80,
+    surfaceTint = Color.Black,
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Blue40,
     secondary = PurpleGrey40,
-    tertiary = Pink40
+    tertiary = Pink40,
+    surfaceTint = Color.White,
+//    #4a80f4
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
@@ -73,8 +76,6 @@ fun RMASTheme(
 }
 
 var systemUiVisibilityDefaultValue: Int? = null;
-// 10000 light
-// 1792 dark
 
 @Suppress("DEPRECATION")
 fun setDarkStatusBarIcons(window: Window) {
@@ -93,3 +94,23 @@ fun resetSystemNavigationTheme(window: Window) {
 
 //    WindowCompat.setDecorFitsSystemWindows(window, false)
 //    WindowCompat.setDecorFitsSystemWindows(window, false)
+
+// 10000 light
+// 1792 dark
+
+//00000000000000000010011100010000 light
+//00000000000000000000011100000000 dark
+//00000000000000000010000000000000
+
+//        window.statusBarColor = Color.TRANSPARENT
+//        window.navigationBarColor = Color.TRANSPARENT
+
+//        window.clearFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+
+// Ovo kao radi
+//        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+//        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
+//        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION)
+//        window.statusBarColor = Color.TRANSPARENT
+//        window.navigationBarColor = Color.TRANSPARENT
+

@@ -2,9 +2,7 @@ package com.example.rmas.viewModels
 
 import android.content.ContentResolver
 import android.net.Uri
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rmas.enums.AuthStatus
@@ -64,7 +62,6 @@ class AuthViewModel: ViewModel() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.P)
     fun signUp(name: String, surname: String, phoneNumber: String, email: String, password: String, imageUri: Uri, contentResolver: ContentResolver) {
         viewModelScope.launch {
             setIsSigningUp(true)

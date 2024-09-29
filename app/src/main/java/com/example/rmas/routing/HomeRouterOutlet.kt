@@ -1,15 +1,15 @@
 package com.example.rmas.routing
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.rmas.screens.home.Map
 import com.example.rmas.screens.home.Table
 import com.example.rmas.screens.home.Users
+import com.example.rmas.viewModels.FiltersViewModel
 
 object HomeRoutes {
     const val MAP_SCREEN = "MapScreen"
@@ -19,9 +19,16 @@ object HomeRoutes {
 
 @Composable
 fun HomeRouterOutlet(innerPadding: PaddingValues, navController: NavHostController, openProfile: () -> Unit) {
-    NavHost(navController, startDestination = HomeRoutes.USERS_SCREEN) {
+    val filtersViewModel = viewModel<FiltersViewModel>()
+
+    NavHost(navController, startDestination = HomeRoutes.MAP_SCREEN) {
         composable(HomeRoutes.MAP_SCREEN) {
-            Map(innerPadding, openProfile)
+            Map(
+                innerPadding,
+                openProfile,
+                tags = filtersViewModel.userTags,
+                setTag = {id: String, value: Boolean -> filtersViewModel.setTagValue(id, value) },
+            )
         }
         composable(HomeRoutes.TABLE_SCREEN) {
             Table()
