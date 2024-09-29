@@ -1,5 +1,6 @@
 package com.example.rmas.screens.home
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.util.Log
 import androidx.compose.foundation.Image
@@ -31,12 +32,13 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.rounded.FilterAlt
 import androidx.compose.material.ripple.rememberRipple
-import androidx.compose.material3.ElevatedFilterChip
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableChipElevation
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,6 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,6 +60,10 @@ import com.example.rmas.R
 import com.example.rmas.models.UserTag
 import com.example.rmas.ui.theme.resetSystemNavigationTheme
 import com.example.rmas.ui.theme.setDarkStatusBarIcons
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.CameraPosition
@@ -66,11 +73,16 @@ import com.google.maps.android.compose.MapEffect
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
+@SuppressLint("MissingPermission")
+@MapsComposeExperimentalApi
+@ExperimentalPermissionsApi
 @Composable
 fun Map(
     innerPadding: PaddingValues,
@@ -78,12 +90,16 @@ fun Map(
     tags: Map<String, UserTag>,
     setTag: (id: String, value: Boolean) -> Unit,
 ) {
-    val context = (LocalContext.current as Activity).window
+    val activity = (LocalContext.current as Activity)
+    val window = activity.window
+
+    val coroutineScope = rememberCoroutineScope()
+
+    val locationClient = LocationServices.getFusedLocationProviderClient(activity)
+
+    val map = remember { mutableStateOf<GoogleMap?>(null) }
 
     val nis = LatLng(43.321445, 21.896104)
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(nis, 15f)
-    }
 
     val uiSettings  = remember {
         MapUiSettings(
@@ -91,19 +107,46 @@ fun Map(
             myLocationButtonEnabled = false
         )
     }
+    val cameraPositionState = rememberCameraPositionState()
     val properties = remember {
-        MapProperties(
-            mapType = MapType.NORMAL,
-            isMyLocationEnabled = true,
+        mutableStateOf(
+            MapProperties(
+                mapType = MapType.NORMAL,
+                isMyLocationEnabled = false,
+            )
         )
     }
 
-    val map = remember { mutableStateOf<GoogleMap?>(null) }
+    fun enableMyLocation() {
+        properties.value = properties.value.copy(
+            isMyLocationEnabled = true
+        )
+
+        coroutineScope.launch {
+            val location = locationClient.lastLocation.await()
+            cameraPositionState.position =
+                CameraPosition.fromLatLngZoom(LatLng(location.latitude, location.longitude), 15f)
+        }
+    }
+
+    val locationPermissionState = rememberPermissionState(
+        android.Manifest.permission.ACCESS_FINE_LOCATION
+    ) { isGranted ->
+        if (isGranted) {
+            enableMyLocation()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if(locationPermissionState.status.isGranted) {
+            enableMyLocation()
+        }
+    }
 
     GoogleMap(
         modifier = Modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
-        properties = properties,
+        properties = properties.value,
         uiSettings = uiSettings,
         contentPadding = WindowInsets.navigationBars.add(WindowInsets.statusBars).asPaddingValues(),
     ) {
@@ -117,6 +160,25 @@ fun Map(
             title = "Nis",
             snippet = "Marker in Nis"
         )
+    }
+
+    fun setMapViewToMyLocation() {
+        coroutineScope.launch {
+            if (locationPermissionState.status.isGranted) {
+                val location = locationClient.lastLocation.await()
+                map.value?.moveCamera(
+                    CameraUpdateFactory.newLatLngZoom(
+                        LatLng(
+                            location.latitude,
+                            location.longitude
+                        ),
+                        15f
+                    )
+                ) ?: Log.e(null, "Map is null")
+            } else {
+                locationPermissionState.launchPermissionRequest()
+            }
+        }
     }
 
     Box(
@@ -197,8 +259,16 @@ fun Map(
 
             Row(modifier = Modifier .horizontalScroll(rememberScrollState())) {
                 Spacer(modifier = Modifier.width(16.dp))
-                selected.forEachIndexed() { index, it ->
-                    ElevatedFilterChip(
+                selected.forEachIndexed { index, it ->
+                    FilterChip(
+                        elevation = SelectableChipElevation(
+                            elevation = 10.dp,
+                            draggedElevation = 10.dp,
+                            focusedElevation = 10.dp,
+                            hoveredElevation = 10.dp,
+                            pressedElevation = 10.dp,
+                            disabledElevation = 10.dp,
+                        ),
                         onClick = {
                             selected[index] = it.copy(
                                 selected = !it.selected
@@ -241,19 +311,8 @@ fun Map(
             FloatingActionButton(
                 modifier = Modifier
                     .padding(bottom = 16.dp),
-                onClick = {
-                    Log.i("map debugging", map.toString())
-                    map.value?.let {
-                        it.moveCamera(
-                            CameraUpdateFactory.newLatLng(
-                                LatLng(
-                                    it.myLocation.latitude,
-                                    it.myLocation.longitude,
-                                )
-                            )
-                        )
-                    } ?: Log.e("moja mapa", "nema je")
-                },
+
+                onClick = { setMapViewToMyLocation() },
                 shape = CircleShape,
                 containerColor = Color.White,
                 contentColor = MaterialTheme.colorScheme.primary,
@@ -266,19 +325,7 @@ fun Map(
             }
 
             FloatingActionButton(
-                onClick = {
-                    Log.i("moja mapa", map.toString())
-                    map.value?.let {
-                        it.moveCamera(
-                            CameraUpdateFactory.newLatLng(
-                                LatLng(
-                                    it.myLocation.latitude,
-                                    it.myLocation.longitude,
-                                )
-                            )
-                        )
-                    } ?: Log.e("moja mapa", "nema je")
-                },
+                onClick = { setMapViewToMyLocation() },
                 shape = RoundedCornerShape(16.dp),
                 containerColor = MaterialTheme.colorScheme.primary,
             ) {
@@ -294,9 +341,9 @@ fun Map(
     }
 
     DisposableEffect(LocalLifecycleOwner.current) {
-        setDarkStatusBarIcons(context)
+        setDarkStatusBarIcons(window)
         onDispose {
-            resetSystemNavigationTheme(context)
+            resetSystemNavigationTheme(window)
         }
     }
 }

@@ -15,9 +15,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts.TakePicture
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Scaffold
-import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.example.rmas.routing.MainRouterOutlet
 import com.example.rmas.ui.theme.RMASTheme
@@ -58,7 +55,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT))
         if (Build.VERSION.SDK_INT >= 29) {
@@ -66,9 +62,7 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             RMASTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MainRouterOutlet(contentResolver = contentResolver)
-                }
+                MainRouterOutlet(contentResolver = contentResolver)
             }
         }
     }

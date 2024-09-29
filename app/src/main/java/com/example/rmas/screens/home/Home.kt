@@ -1,24 +1,11 @@
 package com.example.rmas.screens.home
 
-import android.os.Build
-import com.example.rmas.R
-import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.outlined.Clear
-import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Leaderboard
 import androidx.compose.material.icons.outlined.Map
-import androidx.compose.material.icons.outlined.People
-import androidx.compose.material.icons.outlined.PeopleOutline
-import androidx.compose.material.icons.outlined.TableChart
-import androidx.compose.material.icons.outlined.TableView
-import androidx.compose.material.icons.rounded.Build
-import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -29,19 +16,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
+import com.example.rmas.R
 import com.example.rmas.routing.HomeRouterOutlet
 import com.example.rmas.routing.HomeRoutes
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.maps.android.compose.MapsComposeExperimentalApi
 
 
+@MapsComposeExperimentalApi
+@ExperimentalPermissionsApi
 @Composable
 fun Home(
     openProfile: () -> Unit

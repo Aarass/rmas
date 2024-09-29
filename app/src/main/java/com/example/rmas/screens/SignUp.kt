@@ -34,7 +34,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -69,7 +68,7 @@ fun SignUp(
     var password by rememberSaveable { mutableStateOf("") }
 
     val imageUri by imageUriFlow.collectAsState(null)
-    val isSigningUp by isSigningUpFlow.collectAsState(false);
+    val isSigningUp by isSigningUpFlow.collectAsState(false)
 
     Box(
         modifier = Modifier
@@ -150,7 +149,7 @@ fun SignUp(
                         .padding(bottom = 16.dp, top = 16.dp)
                         .fillMaxWidth(),
                     onClick = {
-                        val imageUriCopy = imageUri;
+                        val imageUriCopy = imageUri
                         if (imageUriCopy != null) {
                             signUp(name, surname, phoneNumber, email, password, imageUriCopy)
                         } else {
@@ -184,7 +183,7 @@ fun SignUp(
 
 @Composable
 fun ImageSelector(imageUri: Uri?, openCamera: () -> Unit, clearSelectedImage: () -> Unit) {
-    val roundedCornerSize = 24.dp;
+    val roundedCornerSize = 24.dp
     Box(
         modifier = Modifier
             .padding(4.dp)

@@ -88,4 +88,5 @@ dependencies {
     implementation (libs.play.services.maps)
     implementation (libs.play.services.location)
     implementation("androidx.compose.material:material-icons-extended:1.5.1")
+    implementation("com.google.accompanist:accompanist-permissions:0.36.0")
 }

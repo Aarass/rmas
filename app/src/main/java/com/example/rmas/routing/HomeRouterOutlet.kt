@@ -10,6 +10,8 @@ import com.example.rmas.screens.home.Map
 import com.example.rmas.screens.home.Table
 import com.example.rmas.screens.home.Users
 import com.example.rmas.viewModels.FiltersViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.maps.android.compose.MapsComposeExperimentalApi
 
 object HomeRoutes {
     const val MAP_SCREEN = "MapScreen"
@@ -17,6 +19,8 @@ object HomeRoutes {
     const val USERS_SCREEN = "UsersScreen"
 }
 
+@MapsComposeExperimentalApi
+@ExperimentalPermissionsApi
 @Composable
 fun HomeRouterOutlet(innerPadding: PaddingValues, navController: NavHostController, openProfile: () -> Unit) {
     val filtersViewModel = viewModel<FiltersViewModel>()

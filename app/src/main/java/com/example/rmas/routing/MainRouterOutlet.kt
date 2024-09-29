@@ -1,8 +1,10 @@
 package com.example.rmas.routing
 
 import android.content.ContentResolver
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,6 +16,8 @@ import com.example.rmas.screens.SignUp
 import com.example.rmas.screens.home.Home
 import com.example.rmas.viewModels.AuthViewModel
 import com.example.rmas.viewModels.MainViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.maps.android.compose.MapsComposeExperimentalApi
 
 private object MainRoutes {
     const val SIGN_IN_SCREEN = "SignInScreen"
@@ -22,6 +26,7 @@ private object MainRoutes {
     const val PROFILE_SCREEN = "ProfileScreen"
 }
 
+@OptIn(ExperimentalPermissionsApi::class, MapsComposeExperimentalApi::class)
 @Composable
 fun MainRouterOutlet(contentResolver: ContentResolver) {
     val navController = rememberNavController()
@@ -47,7 +52,12 @@ fun MainRouterOutlet(contentResolver: ContentResolver) {
         }
     }
 
-    NavHost(navController, startDestination = MainRoutes.SIGN_IN_SCREEN) {
+    NavHost(
+        navController,
+        startDestination = MainRoutes.SIGN_IN_SCREEN,
+        modifier = Modifier
+            .fillMaxSize(),
+        ) {
         composable(MainRoutes.SIGN_IN_SCREEN) {
             SignIn(
                 navigateToSignUpScreen = { navController.navigate(MainRoutes.SIGN_UP_SCREEN) },
