@@ -11,6 +11,7 @@ import com.example.rmas.screens.home.Table
 import com.example.rmas.screens.home.Users
 import com.example.rmas.viewModels.FiltersViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.maps.android.compose.MapsComposeExperimentalApi
 
 object HomeRoutes {
@@ -22,13 +23,19 @@ object HomeRoutes {
 @MapsComposeExperimentalApi
 @ExperimentalPermissionsApi
 @Composable
-fun HomeRouterOutlet(innerPadding: PaddingValues, navController: NavHostController, openProfile: () -> Unit) {
+fun HomeRouterOutlet(
+    innerPadding: PaddingValues,
+    locationClient: FusedLocationProviderClient,
+    navController: NavHostController,
+    openProfile: () -> Unit
+) {
     val filtersViewModel = viewModel<FiltersViewModel>()
 
     NavHost(navController, startDestination = HomeRoutes.MAP_SCREEN) {
         composable(HomeRoutes.MAP_SCREEN) {
             Map(
                 innerPadding,
+                locationClient,
                 openProfile,
                 tags = filtersViewModel.userTags,
                 setTag = {id: String, value: Boolean -> filtersViewModel.setTagValue(id, value) },

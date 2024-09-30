@@ -27,6 +27,7 @@ import com.example.rmas.R
 import com.example.rmas.routing.HomeRouterOutlet
 import com.example.rmas.routing.HomeRoutes
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.maps.android.compose.MapsComposeExperimentalApi
 
 
@@ -34,7 +35,8 @@ import com.google.maps.android.compose.MapsComposeExperimentalApi
 @ExperimentalPermissionsApi
 @Composable
 fun Home(
-    openProfile: () -> Unit
+    openProfile: () -> Unit,
+    locationClient: FusedLocationProviderClient
 ) {
     val navController = rememberNavController()
 
@@ -112,6 +114,6 @@ fun Home(
             }
         }
     ) { innerPadding ->
-        HomeRouterOutlet(innerPadding, navController, openProfile)
+        HomeRouterOutlet(innerPadding, locationClient, navController, openProfile)
     }
 }

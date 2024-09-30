@@ -17,6 +17,7 @@ import com.example.rmas.screens.home.Home
 import com.example.rmas.viewModels.AuthViewModel
 import com.example.rmas.viewModels.MainViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.maps.android.compose.MapsComposeExperimentalApi
 
 private object MainRoutes {
@@ -28,7 +29,7 @@ private object MainRoutes {
 
 @OptIn(ExperimentalPermissionsApi::class, MapsComposeExperimentalApi::class)
 @Composable
-fun MainRouterOutlet(contentResolver: ContentResolver) {
+fun MainRouterOutlet(contentResolver: ContentResolver, locationClient: FusedLocationProviderClient) {
     val navController = rememberNavController()
 
     val mainViewModel = viewModel<MainViewModel>()
@@ -81,7 +82,8 @@ fun MainRouterOutlet(contentResolver: ContentResolver) {
         }
         composable(MainRoutes.HOME_SCREEN) {
             Home(
-                openProfile = { navController.navigate(MainRoutes.PROFILE_SCREEN)}
+                openProfile = { navController.navigate(MainRoutes.PROFILE_SCREEN)},
+                locationClient
             )
         }
         composable(MainRoutes.PROFILE_SCREEN) {

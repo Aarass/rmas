@@ -63,7 +63,7 @@ import com.example.rmas.ui.theme.setDarkStatusBarIcons
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.CameraPosition
@@ -86,6 +86,7 @@ import kotlinx.coroutines.tasks.await
 @Composable
 fun Map(
     innerPadding: PaddingValues,
+    locationClient: FusedLocationProviderClient,
     openProfile: () -> Unit,
     tags: Map<String, UserTag>,
     setTag: (id: String, value: Boolean) -> Unit,
@@ -95,7 +96,6 @@ fun Map(
 
     val coroutineScope = rememberCoroutineScope()
 
-    val locationClient = LocationServices.getFusedLocationProviderClient(activity)
 
     val map = remember { mutableStateOf<GoogleMap?>(null) }
 

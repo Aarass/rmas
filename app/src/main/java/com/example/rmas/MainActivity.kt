@@ -1,6 +1,9 @@
 package com.example.rmas
 
+import android.Manifest
 import android.content.ContentValues
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
@@ -12,14 +15,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.TakePicture
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.rmas.routing.MainRouterOutlet
 import com.example.rmas.ui.theme.RMASTheme
 import com.example.rmas.viewModels.AuthViewModel
 import com.example.rmas.viewModels.MainViewModel
+import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -43,6 +49,28 @@ class MainActivity : ComponentActivity() {
 
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
+        val serviceIntent = Intent(this, LocationService::class.java).apply {
+            action = LocationService.START
+        }
+
+        val servicePermissionsLauncher =
+            registerForActivityResult(
+                ActivityResultContracts.RequestMultiplePermissions()
+            ) { grants: Map<String, Boolean> ->
+                if (grants.values.all { it }) {
+                    startForegroundService(serviceIntent)
+                }
+            }
+
+        if (
+            ContextCompat.checkSelfPermission(this, Manifest.permission.FOREGROUND_SERVICE) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        ) {
+            startForegroundService(serviceIntent)
+        } else {
+            servicePermissionsLauncher.launch(arrayOf(Manifest.permission.FOREGROUND_SERVICE, Manifest.permission.ACCESS_FINE_LOCATION))
+        }
+
         lifecycleScope.launch {
             mainViewModel.takeImageEvent.collect {
                 dispatchTakePictureIntent()
@@ -60,9 +88,12 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= 29) {
             window.isNavigationBarContrastEnforced = false
         }
+
+        val locationClient = LocationServices.getFusedLocationProviderClient(this)
+
         setContent {
             RMASTheme {
-                MainRouterOutlet(contentResolver = contentResolver)
+                MainRouterOutlet(contentResolver = contentResolver, locationClient)
             }
         }
     }
