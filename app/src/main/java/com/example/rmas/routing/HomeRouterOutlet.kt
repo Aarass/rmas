@@ -1,11 +1,17 @@
 package com.example.rmas.routing
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.rmas.models.User
 import com.example.rmas.screens.home.Map
 import com.example.rmas.screens.home.Table
 import com.example.rmas.screens.home.Users
@@ -13,6 +19,7 @@ import com.example.rmas.viewModels.FiltersViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.maps.android.compose.MapsComposeExperimentalApi
+import kotlinx.coroutines.flow.Flow
 
 object HomeRoutes {
     const val MAP_SCREEN = "MapScreen"
@@ -27,7 +34,9 @@ fun HomeRouterOutlet(
     innerPadding: PaddingValues,
     locationClient: FusedLocationProviderClient,
     navController: NavHostController,
-    openProfile: () -> Unit
+    currentUserFlow: Flow<User?>,
+    signOut: () -> Unit,
+    openAddMapItemScreen: () -> Unit,
 ) {
     val filtersViewModel = viewModel<FiltersViewModel>()
 
@@ -36,9 +45,11 @@ fun HomeRouterOutlet(
             Map(
                 innerPadding,
                 locationClient,
-                openProfile,
+                currentUserFlow,
+                signOut,
                 tags = filtersViewModel.userTags,
                 setTag = {id: String, value: Boolean -> filtersViewModel.setTagValue(id, value) },
+                openAddMapItemScreen
             )
         }
         composable(HomeRoutes.TABLE_SCREEN) {

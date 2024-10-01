@@ -1,6 +1,7 @@
 package com.example.rmas.repositories
 
 import android.net.Uri
+import com.example.rmas.models.User
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -8,11 +9,22 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue.serverTimestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.getField
 import kotlinx.coroutines.tasks.await
 
 class UserRepository {
     private var auth: FirebaseAuth = Firebase.auth
     private val db: FirebaseFirestore = Firebase.firestore
+
+    suspend fun getUser(userUid: String): User {
+        val document = db.collection("users").document(userUid).get().await()
+        return User(
+            name = document.getField("name") ?: "",
+            surname  = document.getField("surname") ?: "",
+            phoneNumber = document.getField("phoneNumber") ?: "",
+            imageUrl = document.getField("imageUrl") ?: "",
+        )
+    }
 
     suspend fun createUser(email: String, password: String): FirebaseUser {
         val user = auth.createUserWithEmailAndPassword(email, password).await().user ?: throw Exception("Couldn't create user")

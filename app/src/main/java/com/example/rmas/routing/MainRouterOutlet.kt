@@ -10,7 +10,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.rmas.enums.AuthStatus
-import com.example.rmas.screens.Profile
 import com.example.rmas.screens.SignIn
 import com.example.rmas.screens.SignUp
 import com.example.rmas.screens.home.Home
@@ -24,7 +23,6 @@ private object MainRoutes {
     const val SIGN_IN_SCREEN = "SignInScreen"
     const val SIGN_UP_SCREEN = "SignUpScreen"
     const val HOME_SCREEN = "HomeScreen"
-    const val PROFILE_SCREEN = "ProfileScreen"
 }
 
 @OptIn(ExperimentalPermissionsApi::class, MapsComposeExperimentalApi::class)
@@ -82,12 +80,10 @@ fun MainRouterOutlet(contentResolver: ContentResolver, locationClient: FusedLoca
         }
         composable(MainRoutes.HOME_SCREEN) {
             Home(
-                openProfile = { navController.navigate(MainRoutes.PROFILE_SCREEN)},
-                locationClient
+                signOut ={ authViewModel.signOut() },
+                currentUserFlow = authViewModel.currentUser,
+                locationClient = locationClient
             )
-        }
-        composable(MainRoutes.PROFILE_SCREEN) {
-            Profile(signOut ={ authViewModel.signOut() })
         }
     }
 }

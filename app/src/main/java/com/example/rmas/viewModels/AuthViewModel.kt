@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rmas.enums.AuthStatus
 import com.example.rmas.errors.ErrorHandler
+import com.example.rmas.models.User
 import com.example.rmas.repositories.ServiceLocator
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
@@ -39,9 +40,17 @@ class AuthViewModel: ViewModel() {
         //.drop(1)
     val authStatus = _authStatus.asStateFlow()
 
+    private val _currentUser = MutableStateFlow<User?>(null)
+    val currentUser = _currentUser.asStateFlow()
+
+
     fun tryToRestoreSession() {
-        if (auth.currentUser != null) {
+        val user = auth.currentUser;
+        if (user != null) {
             _authStatus.value = AuthStatus.LogedIn
+            viewModelScope.launch {
+                _currentUser.value = userRepository.getUser(user.uid)
+            }
         }
         Log.i("auth", auth.currentUser?.uid ?: "no user")
     }
@@ -53,6 +62,9 @@ class AuthViewModel: ViewModel() {
             try {
                 auth.signInWithEmailAndPassword(email, password).await()
                 _authStatus.value = AuthStatus.LogedIn
+                viewModelScope.launch {
+                    _currentUser.value = userRepository.getUser(auth.currentUser!!.uid)
+                }
 
             } catch (e: Exception) {
                 errorHandler.showError(e)
@@ -83,11 +95,17 @@ class AuthViewModel: ViewModel() {
                             user = user,
                             imageUrl = uploadedImageUrl
                         )
+
+                        _currentUser.value = User(
+                            name = name,
+                            phoneNumber = phoneNumber,
+                            surname = surname,
+                            imageUrl = uploadedImageUrl.toString(),
+                        )
                     }
                 ).awaitAll()
 
                 _authStatus.value = AuthStatus.LogedIn
-
             } catch (e: Exception) {
                 errorHandler.showError(e)
             } finally {

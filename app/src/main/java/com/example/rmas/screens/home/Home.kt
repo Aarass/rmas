@@ -1,5 +1,6 @@
 package com.example.rmas.screens.home
 
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Leaderboard
@@ -24,23 +25,28 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
 import com.example.rmas.R
+import com.example.rmas.models.User
 import com.example.rmas.routing.HomeRouterOutlet
 import com.example.rmas.routing.HomeRoutes
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.maps.android.compose.MapsComposeExperimentalApi
+import kotlinx.coroutines.flow.Flow
 
 
 @MapsComposeExperimentalApi
 @ExperimentalPermissionsApi
 @Composable
 fun Home(
-    openProfile: () -> Unit,
+    currentUserFlow: Flow<User?>,
+    signOut: () -> Unit,
     locationClient: FusedLocationProviderClient
 ) {
     val navController = rememberNavController()
 
     val currentRoute = rememberSaveable { mutableStateOf(HomeRoutes.MAP_SCREEN) }
+
+    val addMapItemVisibilityState = MutableTransitionState(false )
 
     val navigationBarItemColors = NavigationBarItemDefaults.colors().copy(
         selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -114,6 +120,15 @@ fun Home(
             }
         }
     ) { innerPadding ->
-        HomeRouterOutlet(innerPadding, locationClient, navController, openProfile)
+        HomeRouterOutlet(
+            innerPadding,
+            locationClient,
+            navController,
+            currentUserFlow,
+            signOut,
+            openAddMapItemScreen = { addMapItemVisibilityState.targetState = true }
+        )
     }
+
+    AddMapItemScreen(visibility = addMapItemVisibilityState)
 }
