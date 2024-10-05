@@ -1,5 +1,6 @@
 package com.example.rmas.routing
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +16,7 @@ import com.example.rmas.models.User
 import com.example.rmas.screens.home.Map
 import com.example.rmas.screens.home.Table
 import com.example.rmas.screens.home.Users
+import com.example.rmas.ui.theme.resetSystemNavigationTheme
 import com.example.rmas.viewModels.FiltersViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -36,10 +38,11 @@ fun HomeRouterOutlet(
     navController: NavHostController,
     currentUserFlow: Flow<User?>,
     signOut: () -> Unit,
+    isAddMapItemScreenVisible: Boolean,
     openAddMapItemScreen: () -> Unit,
+    closeAddMapItemScreen: () -> Unit,
+    filtersViewModel: FiltersViewModel
 ) {
-    val filtersViewModel = viewModel<FiltersViewModel>()
-
     NavHost(navController, startDestination = HomeRoutes.MAP_SCREEN) {
         composable(HomeRoutes.MAP_SCREEN) {
             Map(
@@ -49,7 +52,9 @@ fun HomeRouterOutlet(
                 signOut,
                 tags = filtersViewModel.userTags,
                 setTag = {id: String, value: Boolean -> filtersViewModel.setTagValue(id, value) },
-                openAddMapItemScreen
+                isAddMapItemScreenVisible,
+                openAddMapItemScreen,
+                closeAddMapItemScreen,
             )
         }
         composable(HomeRoutes.TABLE_SCREEN) {

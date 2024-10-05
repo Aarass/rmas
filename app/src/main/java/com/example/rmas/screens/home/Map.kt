@@ -3,6 +3,7 @@ package com.example.rmas.screens.home
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -110,7 +111,9 @@ fun Map(
     signOut: () -> Unit,
     tags: Map<String, UserTag>,
     setTag: (id: String, value: Boolean) -> Unit,
+    isAddMapItemScreenVisible: Boolean,
     openAddMapItemScreen: () -> Unit,
+    closeAddMapItemScreen: () -> Unit,
 ) {
     val activity = (LocalContext.current as Activity)
     val window = activity.window
@@ -291,7 +294,7 @@ fun Map(
                 this.addAll(tags.values)
             } }
 
-            Row(modifier = Modifier .horizontalScroll(rememberScrollState())) {
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 Spacer(modifier = Modifier.width(16.dp))
                 selected.forEachIndexed { index, it ->
                     FilterChip(
@@ -378,10 +381,16 @@ fun Map(
     }
 
     DisposableEffect(LocalLifecycleOwner.current) {
-        setDarkStatusBarIcons(window)
+        if (!isAddMapItemScreenVisible) {
+            setDarkStatusBarIcons(window)
+        }
         onDispose {
             resetSystemNavigationTheme(window)
         }
+    }
+
+    BackHandler(enabled = isAddMapItemScreenVisible) {
+        closeAddMapItemScreen()
     }
 }
 
@@ -391,17 +400,13 @@ fun ProfileDialog(currentUser: User?, signOut: () -> Unit, onDismissRequest: () 
         (LocalView.current.parent as DialogWindowProvider).window.setDimAmount(0.2f)
 
         Card(
-            modifier = Modifier
-                .fillMaxWidth(),
-            shape = RoundedCornerShape(30.dp),
+            shape = RoundedCornerShape(140.dp, 140.dp, 30.dp, 30.dp),
             colors =  CardDefaults.cardColors().copy(
                 containerColor = MaterialTheme.colorScheme.background
             ),
         ) {
             Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
+                modifier = Modifier.padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -430,7 +435,10 @@ fun ProfileDialog(currentUser: User?, signOut: () -> Unit, onDismissRequest: () 
                 )
                 Spacer(modifier = Modifier.height(40.dp))
                 Button(
-                    onClick = signOut,
+                    onClick = {
+                        signOut()
+                        onDismissRequest()
+                    },
                     colors = ButtonColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.error,

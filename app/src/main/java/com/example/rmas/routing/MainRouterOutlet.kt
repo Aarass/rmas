@@ -1,6 +1,7 @@
 package com.example.rmas.routing
 
 import android.content.ContentResolver
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,18 +34,20 @@ fun MainRouterOutlet(contentResolver: ContentResolver, locationClient: FusedLoca
     val mainViewModel = viewModel<MainViewModel>()
     val authViewModel = viewModel<AuthViewModel>()
 
-    LaunchedEffect("auth status") {
+    LaunchedEffect(Unit) {
         authViewModel.onAuthStatusChange.collect {
             if (it == AuthStatus.LogedIn) {
+                if (navController.currentDestination?.route == MainRoutes.HOME_SCREEN) return@collect
                 navController.navigate(MainRoutes.HOME_SCREEN) {
                     popUpTo(navController.graph.id) {
-                        inclusive = true
+                        inclusive = false
                     }
                 }
             } else {
+                if (navController.currentDestination?.route == MainRoutes.SIGN_IN_SCREEN) return@collect
                 navController.navigate(MainRoutes.SIGN_IN_SCREEN) {
                     popUpTo(navController.graph.id) {
-                        inclusive = true
+                        inclusive = false
                     }
                 }
             }
@@ -70,8 +73,7 @@ fun MainRouterOutlet(contentResolver: ContentResolver, locationClient: FusedLoca
             SignUp(
                 navigateToSignInScreen = { navController.navigate(MainRoutes.SIGN_IN_SCREEN) },
                 openCamera = { mainViewModel.takePicture() },
-                clearSelectedImage = { mainViewModel.clearSelectedImageUri() },
-                imageUriFlow = mainViewModel.selectedImageUri,
+                newImageUriFlow = mainViewModel.newImageUri,
                 signUp = { name, surname, phoneNumber, email, password, imageUri ->
                     authViewModel.signUp(name, surname, phoneNumber, email, password, imageUri, contentResolver)
                 },
@@ -82,7 +84,9 @@ fun MainRouterOutlet(contentResolver: ContentResolver, locationClient: FusedLoca
             Home(
                 signOut ={ authViewModel.signOut() },
                 currentUserFlow = authViewModel.currentUser,
-                locationClient = locationClient
+                newImageUriFlow = mainViewModel.newImageUri,
+                openCamera = { mainViewModel.takePicture() },
+                locationClient = locationClient,
             )
         }
     }

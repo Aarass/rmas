@@ -34,12 +34,9 @@ class MainActivity : ComponentActivity() {
 
     private val launcher = registerForActivityResult(TakePicture()) { isSuccess ->
         if (isSuccess) {
-            val selectedImageUriCopy = selectedImageUri
-                ?: throw Exception("Image uri is null after successful intent")
-
-            mainViewModel.setSelectedImageUri(selectedImageUriCopy)
-        } else {
-            // TODO
+            selectedImageUri?.let {
+                mainViewModel.setSelectedImageUri(it)
+            } ?: throw Exception("Image uri is null after successful intent")
         }
     }
 
@@ -58,7 +55,7 @@ class MainActivity : ComponentActivity() {
                 ActivityResultContracts.RequestMultiplePermissions()
             ) { grants: Map<String, Boolean> ->
                 if (grants.values.all { it }) {
-                    startForegroundService(serviceIntent)
+//                    startForegroundService(serviceIntent)
                 }
             }
 
@@ -66,7 +63,7 @@ class MainActivity : ComponentActivity() {
             ContextCompat.checkSelfPermission(this, Manifest.permission.FOREGROUND_SERVICE) == PackageManager.PERMISSION_GRANTED &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         ) {
-            startForegroundService(serviceIntent)
+//            startForegroundService(serviceIntent)
         } else {
             servicePermissionsLauncher.launch(arrayOf(Manifest.permission.FOREGROUND_SERVICE, Manifest.permission.ACCESS_FINE_LOCATION))
         }

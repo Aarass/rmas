@@ -1,6 +1,7 @@
 package com.example.rmas.screens
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,6 +32,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,16 +51,26 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
 
 @Composable
 fun SignUp(
     navigateToSignInScreen: () -> Unit,
     openCamera: () -> Unit,
-    clearSelectedImage: () -> Unit,
-    imageUriFlow: Flow<Uri?>,
+    newImageUriFlow: SharedFlow<Uri>,
     signUp: (name: String, surname: String, phoneNumber: String, email: String, password: String, imageUri: Uri) -> Unit,
     isSigningUpFlow: Flow<Boolean>,
 ) {
+    val context = LocalContext.current
+
+    var currentImageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+
+    LaunchedEffect(Unit) {
+        newImageUriFlow.collect {
+            currentImageUri = it
+        }
+    }
+
     val numericRegex = Regex("[^0-9]")
 
     var name by rememberSaveable { mutableStateOf("") }
@@ -67,7 +79,6 @@ fun SignUp(
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
-    val imageUri by imageUriFlow.collectAsState(null)
     val isSigningUp by isSigningUpFlow.collectAsState(false)
 
     Box(
@@ -78,7 +89,11 @@ fun SignUp(
     ) {
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Column(modifier = Modifier.fillMaxWidth(.8f), horizontalAlignment = Alignment.CenterHorizontally) {
-                ImageSelector(imageUri, openCamera = openCamera, clearSelectedImage = clearSelectedImage)
+                ImageSelector(
+                    currentImageUri,
+                    openCamera = openCamera,
+                    clear = { currentImageUri = null }
+                )
 
                 OutlinedTextField(
                     modifier = Modifier
@@ -149,12 +164,10 @@ fun SignUp(
                         .padding(bottom = 16.dp, top = 16.dp)
                         .fillMaxWidth(),
                     onClick = {
-                        val imageUriCopy = imageUri
-                        if (imageUriCopy != null) {
-                            signUp(name, surname, phoneNumber, email, password, imageUriCopy)
-                        } else {
-                            // TODO
-                        }
+                        currentImageUri?.let { imageUri ->
+                            // TODO(Validation)
+                            signUp(name, surname, phoneNumber, email, password, imageUri)
+                        } ?: Toast.makeText(context, "You must take picture", Toast.LENGTH_LONG).show()
                     })  {
                     Text(text = "Sign Up")
                 }
@@ -182,7 +195,7 @@ fun SignUp(
 
 
 @Composable
-fun ImageSelector(imageUri: Uri?, openCamera: () -> Unit, clearSelectedImage: () -> Unit) {
+fun ImageSelector(imageUri: Uri?, openCamera: () -> Unit, clear: () -> Unit) {
     val roundedCornerSize = 24.dp
     Box(
         modifier = Modifier
@@ -206,7 +219,7 @@ fun ImageSelector(imageUri: Uri?, openCamera: () -> Unit, clearSelectedImage: ()
             )
 
             SmallFloatingActionButton(
-                onClick = clearSelectedImage,
+                onClick = clear,
                 shape = CircleShape,
                 modifier = Modifier
                     .align(Alignment.TopEnd),

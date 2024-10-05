@@ -44,6 +44,9 @@ private val LightColorScheme = lightColorScheme(
     */
 )
 
+var systemUiVisibilityDefaultValue: Int? = null;
+
+@Suppress("DEPRECATION")
 @Composable
 fun RMASTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -68,6 +71,9 @@ fun RMASTheme(
 //        window.navigationBarColor = colorScheme.background.toArgb()
 //    }
 
+    systemUiVisibilityDefaultValue = (LocalContext.current as Activity).window.decorView.systemUiVisibility
+
+
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
@@ -75,12 +81,8 @@ fun RMASTheme(
     )
 }
 
-var systemUiVisibilityDefaultValue: Int? = null;
-
 @Suppress("DEPRECATION")
 fun setDarkStatusBarIcons(window: Window) {
-    systemUiVisibilityDefaultValue = window.decorView.systemUiVisibility
-
     window.decorView.systemUiVisibility =
         window.decorView.systemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 }
