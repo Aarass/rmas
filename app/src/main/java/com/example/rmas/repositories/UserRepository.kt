@@ -19,6 +19,7 @@ class UserRepository {
     suspend fun getUser(userUid: String): User {
         val document = db.collection("users").document(userUid).get().await()
         return User(
+            uid = userUid,
             name = document.getField("name") ?: "",
             surname  = document.getField("surname") ?: "",
             phoneNumber = document.getField("phoneNumber") ?: "",

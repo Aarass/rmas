@@ -87,6 +87,7 @@ fun MainRouterOutlet(contentResolver: ContentResolver, locationClient: FusedLoca
                 newImageUriFlow = mainViewModel.newImageUri,
                 openCamera = { mainViewModel.takePicture() },
                 locationClient = locationClient,
+                contentResolver = contentResolver,
             )
         }
     }

@@ -19,8 +19,8 @@ import java.io.ByteArrayOutputStream
 class ImageRepository {
     private val storage: FirebaseStorage = Firebase.storage
 
-    suspend fun uploadImage(user: FirebaseUser, imageUri: Uri, contentResolver: ContentResolver): Uri  {
-        val imageRef = storage.reference.child("images/user_${user.uid}.jpg")
+    suspend fun uploadImage(name: String, imageUri: Uri, contentResolver: ContentResolver): Uri  {
+        val imageRef = storage.reference.child("images/$name.jpg")
         val stream = ByteArrayOutputStream()
 
         withContext(Dispatchers.IO) {

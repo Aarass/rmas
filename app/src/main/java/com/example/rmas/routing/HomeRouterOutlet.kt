@@ -1,13 +1,9 @@
 package com.example.rmas.routing
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import android.content.ContentResolver
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -16,12 +12,12 @@ import com.example.rmas.models.User
 import com.example.rmas.screens.home.Map
 import com.example.rmas.screens.home.Table
 import com.example.rmas.screens.home.Users
-import com.example.rmas.ui.theme.resetSystemNavigationTheme
 import com.example.rmas.viewModels.FiltersViewModel
+import com.example.rmas.viewModels.MapItemsViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.MapsComposeExperimentalApi
-import kotlinx.coroutines.flow.Flow
 
 object HomeRoutes {
     const val MAP_SCREEN = "MapScreen"
@@ -29,6 +25,7 @@ object HomeRoutes {
     const val USERS_SCREEN = "UsersScreen"
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @MapsComposeExperimentalApi
 @ExperimentalPermissionsApi
 @Composable
@@ -36,32 +33,40 @@ fun HomeRouterOutlet(
     innerPadding: PaddingValues,
     locationClient: FusedLocationProviderClient,
     navController: NavHostController,
-    currentUserFlow: Flow<User?>,
+    currentUser: User?,
     signOut: () -> Unit,
     isAddMapItemScreenVisible: Boolean,
-    openAddMapItemScreen: () -> Unit,
+    openAddMapItemScreen: (location: LatLng) -> Unit,
     closeAddMapItemScreen: () -> Unit,
-    filtersViewModel: FiltersViewModel
+    contentResolver: ContentResolver,
+    filtersViewModel: FiltersViewModel,
+    mapItemsViewModel: MapItemsViewModel = viewModel()
 ) {
     NavHost(navController, startDestination = HomeRoutes.MAP_SCREEN) {
         composable(HomeRoutes.MAP_SCREEN) {
             Map(
-                innerPadding,
-                locationClient,
-                currentUserFlow,
-                signOut,
+                innerPadding = innerPadding,
+                contentResolver = contentResolver,
+                locationClient = locationClient,
+                currentUser = currentUser,
+                signOut = signOut,
                 tags = filtersViewModel.userTags,
                 setTag = {id: String, value: Boolean -> filtersViewModel.setTagValue(id, value) },
-                isAddMapItemScreenVisible,
-                openAddMapItemScreen,
-                closeAddMapItemScreen,
+                isAddMapItemScreenVisible = isAddMapItemScreenVisible,
+                openAddMapItemScreen = openAddMapItemScreen,
+                closeAddMapItemScreen = closeAddMapItemScreen,
             )
         }
         composable(HomeRoutes.TABLE_SCREEN) {
-            Table()
+            Table(
+                innerPadding,
+                mapItemsViewModel.getMapItems()
+            )
         }
         composable(HomeRoutes.USERS_SCREEN) {
-            Users()
+            Users(
+                innerPadding,
+            )
         }
     }
 }

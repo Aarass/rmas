@@ -1,17 +1,24 @@
 package com.example.rmas.screens.home
 
 import android.app.Activity
+import android.content.ContentResolver
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.outlined.Leaderboard
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -19,8 +26,11 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -41,6 +51,7 @@ import com.example.rmas.ui.theme.setDarkStatusBarIcons
 import com.example.rmas.viewModels.FiltersViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.MapsComposeExperimentalApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
@@ -54,9 +65,12 @@ fun Home(
     signOut: () -> Unit,
     openCamera: () -> Unit,
     newImageUriFlow: SharedFlow<Uri>,
-    locationClient: FusedLocationProviderClient
+    locationClient: FusedLocationProviderClient,
+    contentResolver: ContentResolver
 ) {
     val window = (LocalContext.current as Activity).window
+
+    val currentUser by currentUserFlow.collectAsState(null)
 
     val navController = rememberNavController()
     val currentRoute = rememberSaveable { mutableStateOf(HomeRoutes.MAP_SCREEN) }
@@ -71,6 +85,7 @@ fun Home(
 
     var addMapItemSavedVisibilityState by rememberSaveable() { mutableStateOf(false) }
     val addMapItemVisibilityState = MutableTransitionState(addMapItemSavedVisibilityState)
+    var addMapItemAtLocation: LatLng? by remember { mutableStateOf(null) }
 
     val filtersViewModel = viewModel<FiltersViewModel>()
 
@@ -136,13 +151,16 @@ fun Home(
         }
     ) { innerPadding ->
         HomeRouterOutlet(
-            innerPadding,
-            locationClient,
-            navController,
-            currentUserFlow,
-            signOut,
+            innerPadding = innerPadding,
+            locationClient = locationClient,
+            navController = navController,
+            currentUser = currentUser,
+            signOut = signOut,
             isAddMapItemScreenVisible = addMapItemVisibilityState.currentState,
-            openAddMapItemScreen = {
+            openAddMapItemScreen = { location ->
+                addMapItemAtLocation = location
+                Log.i("asd", "postavljena lokacija ${location}")
+
                 addMapItemVisibilityState.targetState = true
                 addMapItemSavedVisibilityState = true
                 resetSystemNavigationTheme(window)
@@ -152,9 +170,15 @@ fun Home(
                 addMapItemSavedVisibilityState = false
                 setDarkStatusBarIcons(window)
             },
-            filtersViewModel
+            contentResolver = contentResolver,
+            filtersViewModel = filtersViewModel,
         )
     }
+
+    val coroutineScope = rememberCoroutineScope()
+
+
+    var isLoadingIndicatorVisible by remember { mutableStateOf(false) }
 
     AddMapItemScreen(
         visibility = addMapItemVisibilityState,
@@ -163,7 +187,27 @@ fun Home(
             addMapItemSavedVisibilityState = false
             setDarkStatusBarIcons(window)
         },
-        newImageUriFlow,
-        openCamera,
+        newImageUriFlow = newImageUriFlow,
+        openCamera = openCamera,
+        author = currentUser,
+        location = addMapItemAtLocation,
+        longLastingCoroutineScope = coroutineScope,
+        contentResolver = contentResolver,
+        startLoadingAnimation = {
+            isLoadingIndicatorVisible = true
+        },
+        stopLoadingAnimation = {
+            isLoadingIndicatorVisible = false
+        }
     )
+
+//    Box(modifier = Modifier.fillMaxSize()) {
+//        if (isLoadingIndicatorVisible) {
+//            LinearProgressIndicator(
+//                modifier = Modifier.fillMaxWidth().height(5.dp),
+//                color = MaterialTheme.colorScheme.secondary,
+//                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+//            )
+//        }
+//    }
 }

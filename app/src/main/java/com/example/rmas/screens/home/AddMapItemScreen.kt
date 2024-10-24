@@ -1,9 +1,10 @@
 package com.example.rmas.screens.home
 
 import android.app.Activity
+import android.content.ContentResolver
 import android.content.res.Configuration
 import android.net.Uri
-import androidx.activity.compose.BackHandler
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
@@ -70,10 +71,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rmas.R
+import com.example.rmas.models.User
 import com.example.rmas.models.UserTag
 import com.example.rmas.utility.ClearableImage
 import com.example.rmas.viewModels.AddMapItemViewModel
+import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.launch
 
 @Composable
 fun AddMapItemScreen(
@@ -82,9 +87,13 @@ fun AddMapItemScreen(
     newImageUriFlow: SharedFlow<Uri>,
     openCamera: () -> Unit,
     addMapItemViewModel: AddMapItemViewModel = viewModel(),
+    author: User?,
+    location: LatLng?,
+    longLastingCoroutineScope: CoroutineScope,
+    contentResolver: ContentResolver,
+    startLoadingAnimation: () -> Unit,
+    stopLoadingAnimation: () -> Unit,
 ) {
-    val window = (LocalContext.current as Activity).window
-
     val focusManager = LocalFocusManager.current
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -141,7 +150,11 @@ fun AddMapItemScreen(
                                     })
                                 }
                         ) {
-                            Content(innerPadding, newImageUriFlow, addImage = openCamera, addMapItemViewModel)
+                            author?.let { author ->
+                                location?.let { location ->
+                                    Content(close, innerPadding, newImageUriFlow, addImage = openCamera, addMapItemViewModel, author.uid, location, longLastingCoroutineScope, contentResolver, startLoadingAnimation, stopLoadingAnimation)
+                                }
+                            }
                         }
                     }
                 }
@@ -153,20 +166,31 @@ fun AddMapItemScreen(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Content(
+    close: () -> Unit,
     innerPadding: PaddingValues,
     newImageUriFlow: SharedFlow<Uri>,
     addImage: () -> Unit,
-    addMapItemViewModel: AddMapItemViewModel = viewModel()
+    addMapItemViewModel: AddMapItemViewModel = viewModel(),
+    authorUid: String,
+    location: LatLng,
+    longLastingCoroutineScope: CoroutineScope,
+    contentResolver: ContentResolver,
+    startLoadingAnimation: () -> Unit,
+    stopLoadingAnimation: () -> Unit,
 ) {
     val configuration = LocalConfiguration.current
 
-    val images = remember { mutableStateListOf<Uri>() }
+    var isNewLaunch by rememberSaveable { mutableStateOf(true) }
+    if (isNewLaunch) {
+        addMapItemViewModel.resetTags()
+        addMapItemViewModel.resetImages()
+
+        isNewLaunch = false
+    }
 
     LaunchedEffect(Unit) {
-        addMapItemViewModel.clearAll()
-
-        newImageUriFlow.collect {
-            images.add(it)
+        newImageUriFlow.collect { uri ->
+            addMapItemViewModel.addImage(uri)
         }
     }
 
@@ -189,7 +213,13 @@ private fun Content(
 //                    fontWeight = FontWeight.Light,
 //                )
 
-                ImageList(images, addImage)
+                ImageList(
+                    images = addMapItemViewModel.images,
+                    addImage = addImage,
+                    removeImage = { index ->
+                        addMapItemViewModel.removeImage(index)
+                    }
+                )
 
                 Box(
                     modifier = Modifier.padding(vertical = 6.dp)
@@ -242,7 +272,28 @@ private fun Content(
                 Button(
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     onClick = {
-                        throw NotImplementedError()
+                        longLastingCoroutineScope.launch {
+                            try {
+                                startLoadingAnimation()
+                                Log.i("map items", "map item upload about to start")
+                                addMapItemViewModel.uploadNewMapItem(
+                                    addMapItemViewModel.images,
+                                    addMapItemViewModel.selectedTags.values,
+                                    title,
+                                    description,
+                                    authorUid,
+                                    location,
+                                    contentResolver,
+                                )
+                                stopLoadingAnimation()
+                                close()
+                                Log.i("map items", "map item upload successfully done")
+                            } catch (err: Exception) {
+
+                                stopLoadingAnimation()
+                                Log.e("map items", "Error while creating new Map Item: $err.toString()")
+                            }
+                        }
                     },
                     colors = ButtonDefaults.buttonColors().copy(
                         containerColor = MaterialTheme.colorScheme.primary,
@@ -286,7 +337,7 @@ private fun Content(
 }
 
 @Composable
-private fun ImageList(images: SnapshotStateList<Uri>, addImage: () -> Unit) {
+private fun ImageList(images: List<Uri>, addImage: () -> Unit, removeImage: (index: Int) -> Unit) {
     val roundness = RoundedCornerShape(10.dp)
     val style = Modifier
         .height(250.dp)
@@ -295,16 +346,8 @@ private fun ImageList(images: SnapshotStateList<Uri>, addImage: () -> Unit) {
         .clip(roundness)
 
     Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-        Spacer(modifier = Modifier.width(16.dp))
-        images.forEachIndexed { index, uri ->
-            ClearableImage(
-                imageUri = uri,
-                clear = { images.removeAt(index) },
-                modifier = style
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-        }
 
+        Spacer(modifier = Modifier.width(16.dp))
         if (images.size < 5) {
             Button(
                 modifier = style,
@@ -318,6 +361,15 @@ private fun ImageList(images: SnapshotStateList<Uri>, addImage: () -> Unit) {
                     tint = MaterialTheme.colorScheme.outline
                 )
             }
+            Spacer(modifier = Modifier.width(16.dp))
+        }
+
+        images.forEachIndexed { index, uri ->
+            ClearableImage(
+                imageUri = uri,
+                clear = { removeImage(index) },
+                modifier = style
+            )
             Spacer(modifier = Modifier.width(16.dp))
         }
 

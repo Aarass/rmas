@@ -90,13 +90,14 @@ class AuthViewModel: ViewModel() {
                         )
                     },
                     async {
-                        val uploadedImageUrl = imageRepository.uploadImage(user, imageUri, contentResolver)
+                        val uploadedImageUrl = imageRepository.uploadImage("user_${user.uid}", imageUri, contentResolver)
                         userRepository.setUserProfileImage(
                             user = user,
                             imageUrl = uploadedImageUrl
                         )
 
                         _currentUser.value = User(
+                            uid = user.uid,
                             name = name,
                             phoneNumber = phoneNumber,
                             surname = surname,

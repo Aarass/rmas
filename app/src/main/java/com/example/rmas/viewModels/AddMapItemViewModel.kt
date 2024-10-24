@@ -1,34 +1,64 @@
 package com.example.rmas.viewModels
 
+import android.content.ContentResolver
+import android.net.Uri
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import com.example.rmas.models.UserTag
 import com.example.rmas.repositories.ServiceLocator
-import okhttp3.internal.toImmutableMap
+import com.google.android.gms.maps.model.LatLng
+import java.util.UUID
 
 class AddMapItemViewModel: ViewModel() {
     private val allTags = ServiceLocator.tagRepository.getAllTags()
 
     private val _selectedTags = mutableStateMapOf<String, UserTag>().apply {
         this.putAll(
-            allTags.map {
-                it.id to UserTag(it, false)
+            allTags.map { tag ->
+                tag.id to UserTag(tag, false)
             }
         )
     }
-
     val selectedTags = _selectedTags as Map<String, UserTag>
 
     fun setTagValue(id: String, value: Boolean) {
         _selectedTags[id] = _selectedTags[id]?.copy(selected = value) ?: throw Exception("There is no tag with passed id")
     }
 
-    fun clearAll() {
-        _selectedTags.clear()
-        _selectedTags.putAll(
-            allTags.map {
-                it.id to UserTag(it, false)
-            }
-        )
+    fun resetTags() {
+        _selectedTags.forEach { entry ->
+            entry.value.selected = false
+        }
+    }
+
+    private val _images = mutableStateListOf<Uri>()
+    val images = _images as List<Uri>
+
+    fun addImage(uri: Uri) {
+        _images.add(uri)
+    }
+
+    fun removeImage(index: Int) {
+        _images.removeAt(index)
+    }
+
+    fun resetImages() {
+        _images.clear()
+    }
+
+    suspend fun uploadNewMapItem(
+        images: Collection<Uri>,
+        tags: Collection<UserTag>,
+        title: String,
+        description: String,
+        authorUid: String,
+        location: LatLng,
+        contentResolver: ContentResolver,
+    ) {
+        val urlsInCloud = images.map { image ->
+            ServiceLocator.imageRepository.uploadImage(UUID.randomUUID().toString(), image, contentResolver)
+        }
+        ServiceLocator.mapItemRepository.addNewMapItem(urlsInCloud, tags, title, description, authorUid, location)
     }
 }
