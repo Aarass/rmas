@@ -172,6 +172,10 @@ fun Home(
             },
             contentResolver = contentResolver,
             filtersViewModel = filtersViewModel,
+            navigateToMap = {
+                navController.navigate(HomeRoutes.MAP_SCREEN)
+                currentRoute.value = HomeRoutes.MAP_SCREEN
+            }
         )
     }
 

@@ -6,7 +6,6 @@ import android.content.ContentResolver
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -60,16 +59,17 @@ import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -84,6 +84,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.rmas.R
+import com.example.rmas.models.MapItem
 import com.example.rmas.models.User
 import com.example.rmas.models.UserTag
 import com.example.rmas.ui.theme.resetSystemNavigationTheme
@@ -94,6 +95,8 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.GoogleMapOptions
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -105,7 +108,6 @@ import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -125,6 +127,10 @@ fun Map(
     isAddMapItemScreenVisible: Boolean,
     openAddMapItemScreen: (location: LatLng) -> Unit,
     closeAddMapItemScreen: () -> Unit,
+    mapItems: List<MapItem>,
+    selectedMapItem: MapItem?,
+    selectMapItem: (MapItem) -> Unit,
+    deselectMapItem: () -> Unit,
 ) {
     val activity = (LocalContext.current as Activity)
     val window = activity.window
@@ -144,6 +150,11 @@ fun Map(
         )
     }
     val cameraPositionState = rememberCameraPositionState()
+
+    selectedMapItem?.let { item ->
+        cameraPositionState.position =
+            CameraPosition.fromLatLngZoom(LatLng(item.location.latitude, item.location.longitude), 15f)
+    }
     val properties = remember {
         mutableStateOf(
             MapProperties(
@@ -190,17 +201,35 @@ fun Map(
         properties = properties.value,
         uiSettings = uiSettings,
         contentPadding = WindowInsets.navigationBars.add(WindowInsets.statusBars).asPaddingValues(),
+        onMapClick = {
+            Log.i("asd", "map click")
+        }
     ) {
         MapEffect {
             map.value = it
         }
 
 
-        Marker(
-            state = MarkerState(position = nis),
-            title = "Nis",
-            snippet = "Marker in Nis"
-        )
+        mapItems.forEach { item ->
+            Marker(
+                state = MarkerState(position = item.location),
+//                icon = BitmapDescriptorFactory.fromResource(R.drawable.marker),
+//                anchor = Offset(0.0f, 1.0f),
+                onClick = {
+                    selectMapItem(item);
+
+                    // Ovim valjda kazes da ces ti da hendlas sve, da on ne radi nista
+                    // Ako stavis false, marker koji kliknes ce se centrirati na ekranu
+                    true
+                }
+            )
+        }
+
+//        Marker(
+//            state = MarkerState(position = nis),
+//            title = "Nis",
+//            snippet = "Marker in Nis"
+//        )
     }
 
     fun setMapViewToMyLocation() {
@@ -222,11 +251,26 @@ fun Map(
         }
     }
 
+
     val state = rememberBottomSheetScaffoldState(
-        bottomSheetState = rememberStandardBottomSheetState(
-            skipHiddenState = false
-        )
+        bottomSheetState = rememberStandardBottomSheetState(skipHiddenState = false)
     )
+
+    Log.i("asd", "${state.bottomSheetState.currentValue} ${state.bottomSheetState.targetValue}")
+
+    if (state.bottomSheetState.currentValue == state.bottomSheetState.targetValue) {
+        if (state.bottomSheetState.currentValue == SheetValue.Hidden) {
+            deselectMapItem()
+        }
+    }
+
+//    LaunchedEffect(selectedMapItem?.id) {
+//        if (selectedMapItem != null) {
+//            launch {
+//                state.bottomSheetState.show()
+//            }
+//        }
+//    }
 
     // UI Layer
     Box(
@@ -246,20 +290,28 @@ fun Map(
         BottomSheetScaffold(
             // Hack. Scaffold blokira touch iz sebe, a google mapa je iza njega
             modifier = Modifier.fillMaxSize().ignoreNextModifiers(),
-            sheetPeekHeight = BottomSheetDefaults.SheetPeekHeight,
+//            sheetPeekHeight = BottomSheetDefaults.SheetPeekHeight * 2,
+            sheetPeekHeight = if (selectedMapItem == null) 0.dp
+                else BottomSheetDefaults.SheetPeekHeight * 2,
             containerColor = Color.Transparent,
             scaffoldState = state,
             sheetContent = {
-                Text(
-                    "Swipe up to open sheet. Swipe down to dismiss.",
-                    modifier = Modifier.padding(16.dp, 100.dp).fillMaxSize()
-                )
+                selectedMapItem?.let { item ->
+                    Text(
+                        text = item.title,
+                        modifier = Modifier.padding(16.dp, 0.dp)
+                    )
+                    Text(
+                        text = item.description,
+                        modifier = Modifier.padding(16.dp, 0.dp)
+                    )
+                    Spacer(modifier = Modifier.fillMaxHeight())
+                }
             }
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(0.dp, 0.dp, 0.dp, if(state.bottomSheetState.isVisible) BottomSheetDefaults.SheetPeekHeight else 0.dp),
+                    .fillMaxSize(),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {

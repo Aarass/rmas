@@ -9,6 +9,7 @@ import com.example.rmas.models.UserTag
 import com.example.rmas.repositories.ServiceLocator
 import com.google.android.gms.maps.model.LatLng
 import java.util.UUID
+import kotlin.random.Random
 
 class AddMapItemViewModel: ViewModel() {
     private val allTags = ServiceLocator.tagRepository.getAllTags()
@@ -59,6 +60,10 @@ class AddMapItemViewModel: ViewModel() {
         val urlsInCloud = images.map { image ->
             ServiceLocator.imageRepository.uploadImage(UUID.randomUUID().toString(), image, contentResolver)
         }
-        ServiceLocator.mapItemRepository.addNewMapItem(urlsInCloud, tags, title, description, authorUid, location)
+        val randomizedLocation = LatLng(
+            location.latitude + Random.nextDouble(-0.005, 0.005),
+            location.longitude + Random.nextDouble(-0.005, 0.005),
+        )
+        ServiceLocator.mapItemRepository.addNewMapItem(urlsInCloud, tags, title, description, authorUid, randomizedLocation)
     }
 }

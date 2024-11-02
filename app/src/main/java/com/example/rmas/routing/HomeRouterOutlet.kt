@@ -33,6 +33,7 @@ fun HomeRouterOutlet(
     innerPadding: PaddingValues,
     locationClient: FusedLocationProviderClient,
     navController: NavHostController,
+    navigateToMap: () -> Unit,
     currentUser: User?,
     signOut: () -> Unit,
     isAddMapItemScreenVisible: Boolean,
@@ -42,6 +43,9 @@ fun HomeRouterOutlet(
     filtersViewModel: FiltersViewModel,
     mapItemsViewModel: MapItemsViewModel = viewModel()
 ) {
+    val mapItems = mapItemsViewModel.getMapItems()
+    val selectedMapItem = mapItemsViewModel.getSelectedItem()
+
     NavHost(navController, startDestination = HomeRoutes.MAP_SCREEN) {
         composable(HomeRoutes.MAP_SCREEN) {
             Map(
@@ -55,12 +59,25 @@ fun HomeRouterOutlet(
                 isAddMapItemScreenVisible = isAddMapItemScreenVisible,
                 openAddMapItemScreen = openAddMapItemScreen,
                 closeAddMapItemScreen = closeAddMapItemScreen,
+                mapItems,
+                selectedMapItem = selectedMapItem.value,
+                selectMapItem = { item ->
+                    mapItemsViewModel.selectItem(item)
+                },
+                deselectMapItem = {
+                    mapItemsViewModel.deselectItem()
+                }
             )
         }
         composable(HomeRoutes.TABLE_SCREEN) {
             Table(
-                innerPadding,
-                mapItemsViewModel.getMapItems()
+                innerPadding = innerPadding,
+                mapItems,
+                selectedMapItem = selectedMapItem.value,
+                selectMapItem = { item ->
+                    mapItemsViewModel.selectItem(item)
+                },
+                navigateToMap = navigateToMap,
             )
         }
         composable(HomeRoutes.USERS_SCREEN) {
