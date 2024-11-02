@@ -235,7 +235,17 @@ fun Map(
             // Ovo je padding za navigaciju (na mapi nema ovoga jer zelim da se prikazuje ispod navigacije
             .padding(innerPadding)
     ) {
+        fun Modifier.ignoreNextModifiers(): Modifier {
+            return object : Modifier by this {
+                override fun then(other: Modifier): Modifier {
+                    return this
+                }
+            }
+        }
+
         BottomSheetScaffold(
+            // Hack. Scaffold blokira touch iz sebe, a google mapa je iza njega
+            modifier = Modifier.fillMaxSize().ignoreNextModifiers(),
             sheetPeekHeight = BottomSheetDefaults.SheetPeekHeight,
             containerColor = Color.Transparent,
             scaffoldState = state,

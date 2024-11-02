@@ -274,6 +274,7 @@ private fun Content(
                     onClick = {
                         longLastingCoroutineScope.launch {
                             try {
+                                close()
                                 startLoadingAnimation()
                                 Log.i("map items", "map item upload about to start")
                                 addMapItemViewModel.uploadNewMapItem(
@@ -286,7 +287,6 @@ private fun Content(
                                     contentResolver,
                                 )
                                 stopLoadingAnimation()
-                                close()
                                 Log.i("map items", "map item upload successfully done")
                             } catch (err: Exception) {
 

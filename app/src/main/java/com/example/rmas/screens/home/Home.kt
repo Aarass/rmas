@@ -201,13 +201,13 @@ fun Home(
         }
     )
 
-//    Box(modifier = Modifier.fillMaxSize()) {
-//        if (isLoadingIndicatorVisible) {
-//            LinearProgressIndicator(
-//                modifier = Modifier.fillMaxWidth().height(5.dp),
-//                color = MaterialTheme.colorScheme.secondary,
-//                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-//            )
-//        }
-//    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (isLoadingIndicatorVisible) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth().height(5.dp),
+                color = MaterialTheme.colorScheme.secondary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
+        }
+    }
 }
