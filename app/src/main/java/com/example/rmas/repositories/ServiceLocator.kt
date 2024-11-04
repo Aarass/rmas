@@ -5,4 +5,5 @@ object ServiceLocator {
     val imageRepository = ImageRepository()
     val tagRepository = TagRepository()
     val mapItemRepository = MapItemRepository()
+    val reviewRepository = ReviewRepository()
 }

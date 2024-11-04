@@ -56,6 +56,9 @@ fun HomeRouterOutlet(
                 signOut = signOut,
                 tags = filtersViewModel.userTags,
                 setTag = {id: String, value: Boolean -> filtersViewModel.setTagValue(id, value) },
+                getTagById = { id ->
+                    filtersViewModel.getTagById(id)
+                },
                 isAddMapItemScreenVisible = isAddMapItemScreenVisible,
                 openAddMapItemScreen = openAddMapItemScreen,
                 closeAddMapItemScreen = closeAddMapItemScreen,
@@ -78,6 +81,9 @@ fun HomeRouterOutlet(
                     mapItemsViewModel.selectItem(item)
                 },
                 navigateToMap = navigateToMap,
+                deselectMapItem = {
+                    mapItemsViewModel.deselectItem()
+                }
             )
         }
         composable(HomeRoutes.USERS_SCREEN) {

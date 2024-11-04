@@ -1,6 +1,5 @@
 package com.example.rmas.screens.home
 
-import android.app.Activity
 import android.content.ContentResolver
 import android.content.res.Configuration
 import android.net.Uri
@@ -52,12 +51,9 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,7 +61,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -163,7 +158,6 @@ fun AddMapItemScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Content(
     close: () -> Unit,
@@ -388,7 +382,6 @@ private fun ImageList(images: List<Uri>, addImage: () -> Unit, removeImage: (ind
     }
 }
 
-@ExperimentalLayoutApi
 @Composable
 fun SelectableTags(tags: Map<String, UserTag>, setTagValue: (id: String, value: Boolean) -> Unit) {
     Surface (
@@ -427,6 +420,7 @@ fun SelectableTags(tags: Map<String, UserTag>, setTagValue: (id: String, value: 
                     },
                 )
             }
+            Spacer(modifier = Modifier.width(16.dp))
         }
     }
 }

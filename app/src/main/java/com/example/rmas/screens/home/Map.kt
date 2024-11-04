@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ExitToApp
 import androidx.compose.material.icons.filled.Add
@@ -85,6 +86,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.rmas.R
 import com.example.rmas.models.MapItem
+import com.example.rmas.models.Tag
 import com.example.rmas.models.User
 import com.example.rmas.models.UserTag
 import com.example.rmas.ui.theme.resetSystemNavigationTheme
@@ -124,6 +126,7 @@ fun Map(
     signOut: () -> Unit,
     tags: Map<String, UserTag>,
     setTag: (id: String, value: Boolean) -> Unit,
+    getTagById: (String) -> Tag?,
     isAddMapItemScreenVisible: Boolean,
     openAddMapItemScreen: (location: LatLng) -> Unit,
     closeAddMapItemScreen: () -> Unit,
@@ -216,7 +219,8 @@ fun Map(
 //                icon = BitmapDescriptorFactory.fromResource(R.drawable.marker),
 //                anchor = Offset(0.0f, 1.0f),
                 onClick = {
-                    selectMapItem(item);
+                    deselectMapItem()
+                    selectMapItem(item)
 
                     // Ovim valjda kazes da ces ti da hendlas sve, da on ne radi nista
                     // Ako stavis false, marker koji kliknes ce se centrirati na ekranu
@@ -258,8 +262,14 @@ fun Map(
 
     Log.i("asd", "${state.bottomSheetState.currentValue} ${state.bottomSheetState.targetValue}")
 
-    if (state.bottomSheetState.currentValue == state.bottomSheetState.targetValue) {
-        if (state.bottomSheetState.currentValue == SheetValue.Hidden) {
+    var isNewLaunch by rememberSaveable { mutableStateOf(true) }
+
+
+//    if (state.bottomSheetState.currentValue == state.bottomSheetState.targetValue) {
+//        if (state.bottomSheetState.currentValue == SheetValue.Hidden) {
+    if (state.bottomSheetState.currentValue != SheetValue.Hidden) {
+        if (state.bottomSheetState.targetValue == SheetValue.Hidden) {
+            Log.i("asd", "clearam")
             deselectMapItem()
         }
     }
@@ -292,20 +302,19 @@ fun Map(
             modifier = Modifier.fillMaxSize().ignoreNextModifiers(),
 //            sheetPeekHeight = BottomSheetDefaults.SheetPeekHeight * 2,
             sheetPeekHeight = if (selectedMapItem == null) 0.dp
-                else BottomSheetDefaults.SheetPeekHeight * 2,
+                else BottomSheetDefaults.SheetPeekHeight * 3,
             containerColor = Color.Transparent,
             scaffoldState = state,
             sheetContent = {
+                Log.i("asd", "item: $selectedMapItem")
                 selectedMapItem?.let { item ->
-                    Text(
-                        text = item.title,
-                        modifier = Modifier.padding(16.dp, 0.dp)
-                    )
-                    Text(
-                        text = item.description,
-                        modifier = Modifier.padding(16.dp, 0.dp)
-                    )
-                    Spacer(modifier = Modifier.fillMaxHeight())
+                    Column(
+                        modifier = Modifier
+                            .padding(0.dp)
+                            .fillMaxHeight()
+                    ) {
+                        MapItemPreview(item, currentUser, getTagById)
+                    }
                 }
             }
         ) {
@@ -374,13 +383,9 @@ fun Map(
                                     modifier = Modifier
                                         .size(30.dp)
                                         .clip(CircleShape)
-                                        .clickable(
-                                            indication = rememberRipple(bounded = true),
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            onClick =  {
-                                                openProfileDialog()
-                                            }
-                                        ),
+                                        .clickable {
+                                            openProfileDialog()
+                                        }
                                 )
                             }
                         }
