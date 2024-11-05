@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rmas.models.Review
+import com.example.rmas.models.User
 import com.example.rmas.repositories.ServiceLocator
 import kotlinx.coroutines.launch
 
@@ -12,9 +13,14 @@ class ReviewsViewModel: ViewModel() {
         return ServiceLocator.reviewRepository.getReviewsForMapItem(id)
     }
 
-    fun createReview(userId: String, mapItemId: String, rating: Int, comment: String?, callback: () -> Unit) {
+    fun createReview(userId: String, mapItemId: String, rating: Int, comment: String?, callback: (Review) -> Unit) {
         viewModelScope.launch {
-            ServiceLocator.reviewRepository.postReview(userId, mapItemId, rating, comment)
+            val review = ServiceLocator.reviewRepository.postReview(userId, mapItemId, rating, comment)
+            callback(review)
         }
+    }
+
+    suspend fun getUserById(id: String): User? {
+        return ServiceLocator.userRepository.getUser(id)
     }
 }

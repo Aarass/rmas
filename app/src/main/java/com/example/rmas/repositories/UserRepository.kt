@@ -16,8 +16,13 @@ class UserRepository {
     private var auth: FirebaseAuth = Firebase.auth
     private val db: FirebaseFirestore = Firebase.firestore
 
-    suspend fun getUser(userUid: String): User {
+    suspend fun getUser(userUid: String): User? {
         val document = db.collection("users").document(userUid).get().await()
+        
+        if (!document.exists()) {
+            return null
+        }
+
         return User(
             uid = userUid,
             name = document.getField("name") ?: "",

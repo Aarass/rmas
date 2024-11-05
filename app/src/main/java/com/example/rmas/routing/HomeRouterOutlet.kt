@@ -25,7 +25,6 @@ object HomeRoutes {
     const val USERS_SCREEN = "UsersScreen"
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @MapsComposeExperimentalApi
 @ExperimentalPermissionsApi
 @Composable
@@ -62,7 +61,7 @@ fun HomeRouterOutlet(
                 isAddMapItemScreenVisible = isAddMapItemScreenVisible,
                 openAddMapItemScreen = openAddMapItemScreen,
                 closeAddMapItemScreen = closeAddMapItemScreen,
-                mapItems,
+                mapItems = mapItems,
                 selectedMapItem = selectedMapItem.value,
                 selectMapItem = { item ->
                     mapItemsViewModel.selectItem(item)
