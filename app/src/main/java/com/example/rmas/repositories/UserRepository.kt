@@ -16,6 +16,11 @@ class UserRepository {
     private var auth: FirebaseAuth = Firebase.auth
     private val db: FirebaseFirestore = Firebase.firestore
 
+//    collectionRef
+//    .where('name', '>=', queryText)
+//    .where('name', '<=', queryText+ '\uf8ff')
+
+
     suspend fun getUser(userUid: String): User? {
         val document = db.collection("users").document(userUid).get().await()
         

@@ -17,6 +17,10 @@ import kotlinx.coroutines.tasks.await
 class MapItemRepository {
     private val collectionName = "mapItems"
 
+//    collectionRef
+//    .where('name', '>=', queryText)
+//    .where('name', '<=', queryText+ '\uf8ff')
+
     fun getAllMapItems(fn: (List<MapItem>) -> Unit) {
         Firebase.firestore.collection(collectionName).addSnapshotListener { maybeSnapshot, _ ->
             try {

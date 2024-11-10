@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.ContentResolver
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -137,6 +138,8 @@ fun Map(
     val map = remember { mutableStateOf<GoogleMap?>(null) }
 
     var profileDialogVisible  by remember { mutableStateOf(false) }
+    var filtersDialogVisible by remember { mutableStateOf(false) }
+
 
     val nis = LatLng(43.321445, 21.896104)
 
@@ -348,7 +351,7 @@ fun Map(
                                     contentDescription = "App logo image",
                                 )
                                 Spacer(modifier = Modifier.width(16.dp))
-                                Text(text = "Search author")
+                                Text(text = "Hello, ${currentUser?.name} ${currentUser?.surname}")
                             }
 
                             Row(
@@ -359,7 +362,7 @@ fun Map(
                                         .size(30.dp)
                                         .padding(0.dp),
                                     onClick = {
-
+                                        filtersDialogVisible = true
                                     }
                                 ) {
                                     Icon(
@@ -484,6 +487,18 @@ fun Map(
 
     if (profileDialogVisible) {
         ProfileDialog(currentUser, signOut) { profileDialogVisible = false }
+    }
+
+    if (filtersDialogVisible) {
+        FiltersDialog(
+            modifier = Modifier.padding(innerPadding),
+            onConfirmation = {
+                filtersDialogVisible = false
+            },
+            onDismissRequest = {
+                filtersDialogVisible = false
+            }
+        )
     }
 
     DisposableEffect(LocalLifecycleOwner.current) {
