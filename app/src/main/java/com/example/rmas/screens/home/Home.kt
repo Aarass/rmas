@@ -87,8 +87,6 @@ fun Home(
     val addMapItemVisibilityState = MutableTransitionState(addMapItemSavedVisibilityState)
     var addMapItemAtLocation: LatLng? by remember { mutableStateOf(null) }
 
-    val filtersViewModel = viewModel<FiltersViewModel>()
-
     Scaffold(
         bottomBar = {
             NavigationBar(
@@ -171,7 +169,6 @@ fun Home(
                 setDarkStatusBarIcons(window)
             },
             contentResolver = contentResolver,
-            filtersViewModel = filtersViewModel,
             navigateToMap = {
                 navController.navigate(HomeRoutes.MAP_SCREEN)
                 currentRoute.value = HomeRoutes.MAP_SCREEN

@@ -98,9 +98,8 @@ class AuthViewModel: ViewModel() {
 
                         _currentUser.value = User(
                             uid = user.uid,
-                            name = name,
+                            fullName = "$name $surname",
                             phoneNumber = phoneNumber,
-                            surname = surname,
                             imageUrl = uploadedImageUrl.toString(),
                         )
                     }

@@ -5,7 +5,6 @@ import android.app.Activity
 import android.content.ContentResolver
 import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -79,15 +78,18 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.MutableCreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.rmas.R
 import com.example.rmas.models.MapItem
-import com.example.rmas.models.Tag
 import com.example.rmas.models.User
 import com.example.rmas.models.UserTag
 import com.example.rmas.ui.theme.resetSystemNavigationTheme
 import com.example.rmas.ui.theme.setDarkStatusBarIcons
+import com.example.rmas.viewModels.FiltersViewModel
+import com.example.rmas.viewModels.MapItemsViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -119,9 +121,6 @@ fun Map(
     locationClient: FusedLocationProviderClient,
     currentUser: User?,
     signOut: () -> Unit,
-    tags: Map<String, UserTag>,
-    setTag: (id: String, value: Boolean) -> Unit,
-    getTagById: (String) -> Tag?,
     isAddMapItemScreenVisible: Boolean,
     openAddMapItemScreen: (location: LatLng) -> Unit,
     closeAddMapItemScreen: () -> Unit,
@@ -129,6 +128,7 @@ fun Map(
     selectedMapItem: MapItem?,
     selectMapItem: (MapItem) -> Unit,
     deselectMapItem: () -> Unit,
+    filtersViewModel: FiltersViewModel,
 ) {
     val activity = (LocalContext.current as Activity)
     val window = activity.window
@@ -313,7 +313,9 @@ fun Map(
                         MapItemPreview(
                             item,
                             currentUser = currentUser,
-                            getTagById = getTagById,
+                            getTagById = { id ->
+                                filtersViewModel.getTagById(id)
+                            },
                         )
 //                        getUserById = { id -> User(id, "Aleksandar", "Prokopovic", "0621715606", "") }
                     }
@@ -351,7 +353,7 @@ fun Map(
                                     contentDescription = "App logo image",
                                 )
                                 Spacer(modifier = Modifier.width(16.dp))
-                                Text(text = "Hello, ${currentUser?.name} ${currentUser?.surname}")
+                                Text(text = "Hello, ${currentUser?.fullName ?: ""}")
                             }
 
                             Row(
@@ -394,7 +396,7 @@ fun Map(
                     }
 
                     val selected = remember { mutableStateListOf<UserTag>().apply {
-                        this.addAll(tags.values)
+                        this.addAll(filtersViewModel.userTags.values)
                     } }
 
                     Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
@@ -413,7 +415,7 @@ fun Map(
                                     selected[index] = it.copy(
                                         selected = !it.selected
                                     )
-                                    setTag(it.tag.id, !it.selected)
+                                    filtersViewModel.setTagValue(it.tag.id, !it.selected)
                                 },
                                 label = {
                                     Text(it.tag.name)
@@ -491,13 +493,14 @@ fun Map(
 
     if (filtersDialogVisible) {
         FiltersDialog(
-            modifier = Modifier.padding(innerPadding),
-            onConfirmation = {
+            onConfirmation = { authorId, dataRange, distance ->
+                filtersViewModel.setFilters(authorId, dataRange, distance)
                 filtersDialogVisible = false
             },
             onDismissRequest = {
                 filtersDialogVisible = false
-            }
+            },
+            filtersViewModel = filtersViewModel,
         )
     }
 
@@ -544,16 +547,20 @@ fun ProfileDialog(currentUser: User?, signOut: () -> Unit, onDismissRequest: () 
                     contentScale = ContentScale.Crop,
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "${currentUser?.name}",
-                    fontSize = 5.em,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = "${currentUser?.surname}",
-                    fontSize = 5.em,
-                    fontWeight = FontWeight.Light,
-                )
+
+                currentUser?.let { user ->
+                    val parts = user.fullName.split(" ", limit = 2)
+                    Text(
+                        text = parts[0],
+                        fontSize = 5.em,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = parts[1],
+                        fontSize = 5.em,
+                        fontWeight = FontWeight.Light,
+                    )
+                }
                 Spacer(modifier = Modifier.height(40.dp))
                 Button(
                     onClick = {

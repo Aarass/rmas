@@ -1,9 +1,11 @@
 package com.example.rmas.routing
 
 import android.content.ContentResolver
+import android.util.Log
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.MutableCreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -39,8 +41,13 @@ fun HomeRouterOutlet(
     openAddMapItemScreen: (location: LatLng) -> Unit,
     closeAddMapItemScreen: () -> Unit,
     contentResolver: ContentResolver,
-    filtersViewModel: FiltersViewModel,
-    mapItemsViewModel: MapItemsViewModel = viewModel()
+    mapItemsViewModel: MapItemsViewModel = viewModel(),
+    filtersViewModel: FiltersViewModel = viewModel(
+        factory = FiltersViewModel.Factory,
+        extras = MutableCreationExtras().apply {
+            set(FiltersViewModel.MAP_ITEMS_VIEW_MODEL_KEY, mapItemsViewModel)
+        },
+    ),
 ) {
     val mapItems = mapItemsViewModel.getMapItems()
     val selectedMapItem = mapItemsViewModel.getSelectedItem()
@@ -53,11 +60,6 @@ fun HomeRouterOutlet(
                 locationClient = locationClient,
                 currentUser = currentUser,
                 signOut = signOut,
-                tags = filtersViewModel.userTags,
-                setTag = {id: String, value: Boolean -> filtersViewModel.setTagValue(id, value) },
-                getTagById = { id ->
-                    filtersViewModel.getTagById(id)
-                },
                 isAddMapItemScreenVisible = isAddMapItemScreenVisible,
                 openAddMapItemScreen = openAddMapItemScreen,
                 closeAddMapItemScreen = closeAddMapItemScreen,
@@ -68,7 +70,8 @@ fun HomeRouterOutlet(
                 },
                 deselectMapItem = {
                     mapItemsViewModel.deselectItem()
-                }
+                },
+                filtersViewModel = filtersViewModel,
             )
         }
         composable(HomeRoutes.TABLE_SCREEN) {

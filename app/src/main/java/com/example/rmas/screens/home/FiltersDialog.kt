@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,27 +52,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogWindowProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.rmas.R
 import com.example.rmas.models.User
+import com.example.rmas.viewModels.FiltersViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.log10
+import kotlin.math.max
 import kotlin.math.pow
 
-@Preview
-@Composable
-fun tmp() {
-    val width = 350
-    Box(modifier = Modifier.width(width.dp).height(((16.0/9.0) * width).dp)) {
-        FiltersDialog({}, {})
-    }
-}
+//@Preview
+//@Composable
+//fun tmp() {
+//    val width = 350
+//    Box(modifier = Modifier.width(width.dp).height(((16.0/9.0) * width).dp)) {
+//        FiltersDialog(onConfirmation = {}, onDismissRequest =  {}, filtersViewModel = FiltersViewModel())
+//    }
+//}
 
 @Composable
-fun FiltersDialog(onConfirmation: () -> Unit, onDismissRequest: () -> Unit, modifier: Modifier = Modifier) {
+fun FiltersDialog(modifier: Modifier = Modifier, onConfirmation: (authorId: String?, dataRange: Pair<Long?, Long?>, distance: Float?) -> Unit, onDismissRequest: () -> Unit, filtersViewModel: FiltersViewModel) {
     Dialog(onDismissRequest = { onDismissRequest() }) {
         (LocalView.current.parent as DialogWindowProvider).window.setDimAmount(0.2f)
         Card(
@@ -82,56 +86,51 @@ fun FiltersDialog(onConfirmation: () -> Unit, onDismissRequest: () -> Unit, modi
                 containerColor = MaterialTheme.colorScheme.background
             ),
         ) {
-
-            val users = listOf(
-                User("123", "Aleksandar", "Prokopovic", "125812", "https://firebasestorage.googleapis.com/v0/b/rmas-436221.appspot.com/o/images%2F509da977-f839-4d76-a10e-24e69557a1a5.jpg?alt=media&token=a4e961ff-80ba-4bce-a8e5-1c4f64805921"),
-                User("312", "Mika", "Peric", "125812", "https://firebasestorage.googleapis.com/v0/b/rmas-436221.appspot.com/o/images%2F509da977-f839-4d76-a10e-24e69557a1a5.jpg?alt=media&token=a4e961ff-80ba-4bce-a8e5-1c4f64805921")
-            )
-
-
-            var authorFullName by remember { mutableStateOf(null as String?)}
-            var selectedAuthor by remember { mutableStateOf<User?>(users[0])}
-            var authorsListIsExpanded by remember { mutableStateOf(true) }
-
-
+            val authorsQuery = filtersViewModel.authorsQueryState
+            val queriedAuthors = remember { filtersViewModel.getQueriedAuthorsState() }
+            var selectedAuthor by remember { mutableStateOf<User?>(null)}
+            val selectAuthor = { author: User ->
+                selectedAuthor = author
+                filtersViewModel.authorsQueryChanged("")
+            }
 
             var dateRange by remember { mutableStateOf(Pair<Long?, Long?>(null, null))}
 
-            var usedWord by remember { mutableStateOf(null as String?)}
-
-            var sliderValue by remember { mutableStateOf(null as Float?) }
+            var maxDistance by remember { mutableStateOf(null as Float?) }
 
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-
                 Column {
                     Box {
                         TextField(
                             readOnly = selectedAuthor != null,
-                            value = authorFullName ?: "",
+                            value = authorsQuery,
                             modifier = Modifier.fillMaxWidth(),
                             colors = TextFieldDefaults.colors().copy(
                                 unfocusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = .1f),
                                 unfocusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = .6f),
                                 focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = .1f)
                             ),
-                            onValueChange = {
-                                authorsListIsExpanded = it.isNotEmpty()
-                                authorFullName = it
+                            onValueChange = { newValue ->
+                                filtersViewModel.authorsQueryChanged(newValue)
                             },
-                            label = { Text("User's name or surname") },
+                            label = { Text("User's full name") },
                             singleLine = true,
+                            prefix = {
+                                if (filtersViewModel.isQueryingAuthors) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(25.dp)
+                                    )
+                                }
+                            },
                             suffix = {
-                                if (authorFullName?.isNotEmpty() == true) {
+                                if (authorsQuery.isNotEmpty()) {
                                     IconButton(
-                                        modifier = Modifier
-                                            .size(30.dp)
-                                            .padding(0.dp),
+                                        modifier = Modifier.size(30.dp).padding(0.dp),
                                         onClick = {
-                                            authorFullName = null
-                                            authorsListIsExpanded = false
+                                            filtersViewModel.authorsQueryChanged("")
                                         }
                                     ) {
                                         Icon(
@@ -179,64 +178,26 @@ fun FiltersDialog(onConfirmation: () -> Unit, onDismissRequest: () -> Unit, modi
                         }
                     }
 
-                    if (authorsListIsExpanded) {
-                        Column(
-                            modifier = Modifier.clip(RoundedCornerShape(0.dp, 0.dp, 6.dp, 6.dp))
-                        ) {
-                            val selectAuthor = { author: User ->
-                                selectedAuthor = author
+                    Column(
+                        modifier = Modifier.clip(RoundedCornerShape(0.dp, 0.dp, 6.dp, 6.dp))
+                    ) {
+                        queriedAuthors.forEachIndexed { i, user ->
+                            if (i > 0) {
+                                HorizontalDivider()
                             }
-                            users.forEachIndexed { i, user ->
-                                if (i > 0) {
-                                    HorizontalDivider()
-                                }
 
-                                UserOption(
-                                    modifier = Modifier
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = .1f))
-                                        .fillMaxWidth(),
-                                    user,
-                                    selectAuthor
-                                )
-                            }
+                            UserOption(
+                                modifier = Modifier
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = .1f))
+                                    .fillMaxWidth(),
+                                user,
+                                selectAuthor
+                            )
                         }
                     }
                 }
 
                 DateRange(dateRange, onValueChange = { newDateRange -> dateRange = newDateRange })
-
-                TextField(
-                    value = usedWord ?: "",
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors().copy(
-                        unfocusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = .1f),
-                        unfocusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = .6f),
-                        focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = .1f)
-                    ),
-                    onValueChange = {
-                        usedWord = it.ifEmpty { null }
-                    },
-                    label = { Text("Used keyword") },
-                    singleLine = true,
-                    suffix = {
-                        if (usedWord?.isNotEmpty() == true) {
-                            IconButton(
-                                modifier = Modifier
-                                    .size(30.dp)
-                                    .padding(0.dp),
-                                onClick = {
-                                    usedWord = null
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Clear,
-                                    contentDescription = "Filters icon",
-                                    tint = MaterialTheme.colorScheme.secondary
-                                )
-                            }
-                        }
-                    }
-                )
 
                 var sliderPosition by remember { mutableFloatStateOf(1.0f) }
                 Column {
@@ -244,7 +205,7 @@ fun FiltersDialog(onConfirmation: () -> Unit, onDismissRequest: () -> Unit, modi
                         value = sliderPosition,
                         onValueChange = {
                             sliderPosition = it
-                            sliderValue = 10f.pow(sliderPosition * log10(1000f))
+                            maxDistance = 10f.pow(sliderPosition * log10(1000f))
                         },
                         valueRange = 0f..1f
                     )
@@ -255,10 +216,10 @@ fun FiltersDialog(onConfirmation: () -> Unit, onDismissRequest: () -> Unit, modi
                         verticalAlignment = Alignment.CenterVertically
 
                     ) {
-                        Text(text = "Max distance: ${ sliderValue?.let {"%.1f km".format(it)} ?: "∞"}")
+                        Text(text = "Max distance: ${ maxDistance?.let {"%.1f km".format(it)} ?: "∞"}")
                         TextButton(
                             onClick = {
-                                sliderValue = null
+                                maxDistance = null
                                 sliderPosition = 1.0f
                             },
                             modifier = Modifier.padding(0.dp),
@@ -281,7 +242,11 @@ fun FiltersDialog(onConfirmation: () -> Unit, onDismissRequest: () -> Unit, modi
                         Text("Dismiss")
                     }
                     TextButton(
-                        onClick = { onConfirmation() },
+                        onClick = { onConfirmation(
+                            selectedAuthor?.uid,
+                            dateRange,
+                            maxDistance
+                        ) },
                         modifier = Modifier.padding(8.dp),
                     ) {
                         Text("Confirm")
@@ -317,7 +282,7 @@ fun UserOption(modifier: Modifier = Modifier, user: User, select: (User) -> Unit
         )
         Text(
             modifier = Modifier.padding(start = 6.dp),
-            text = "${user.name} ${user.surname}",
+            text = user.fullName,
             color = MaterialTheme.colorScheme.onBackground,
         )
 
@@ -334,7 +299,7 @@ fun DateRange(
     var showDatePicker by remember { mutableStateOf(false) }
 
     TextField(
-        value = "${value.first?.let { convertMillisToDate(it) } ?: ""} - ${value.first?.let { convertMillisToDate(it) } ?: ""}",
+        value = "${value.first?.let { convertMillisToDate(it) } ?: ""} - ${value.second?.let { convertMillisToDate(it) } ?: ""}",
         modifier = Modifier.fillMaxWidth().height(64.dp),
         readOnly = true,
         colors = TextFieldDefaults.colors().copy(
@@ -342,8 +307,7 @@ fun DateRange(
             unfocusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = .6f),
             focusedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = .1f)
         ),
-        onValueChange = {
-        },
+        onValueChange = { },
         trailingIcon = {
             IconButton(onClick = { showDatePicker = !showDatePicker }) {
                 Icon(

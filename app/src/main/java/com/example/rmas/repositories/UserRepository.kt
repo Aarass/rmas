@@ -7,6 +7,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue.serverTimestamp
+import com.google.firebase.firestore.Filter
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.getField
@@ -20,7 +21,6 @@ class UserRepository {
 //    .where('name', '>=', queryText)
 //    .where('name', '<=', queryText+ '\uf8ff')
 
-
     suspend fun getUser(userUid: String): User? {
         val document = db.collection("users").document(userUid).get().await()
         
@@ -28,13 +28,17 @@ class UserRepository {
             return null
         }
 
-        return User(
-            uid = userUid,
-            name = document.getField("name") ?: "",
-            surname  = document.getField("surname") ?: "",
-            phoneNumber = document.getField("phoneNumber") ?: "",
-            imageUrl = document.getField("imageUrl") ?: "",
-        )
+        return User.from(document)
+    }
+
+    suspend fun getUsersBySubstring(query: String): List<User> {
+        val res = db.collection("users").where(
+            Filter.and(
+                Filter.greaterThanOrEqualTo("fullName", query),
+                Filter.lessThanOrEqualTo("fullName", "$query~"), // '\uf8ff'
+            )
+        ).limit(5).get().await()
+        return res.documents.map { User.from(it) }
     }
 
     suspend fun createUser(email: String, password: String): FirebaseUser {

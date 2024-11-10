@@ -302,7 +302,7 @@ fun MapItemPreview(
                             Column(
                                 modifier = Modifier.padding(start = 6.dp)
                             ) {
-                                Text("${user.name} ${user.surname}")
+                                Text(user.fullName)
                                 StarRatingDisplay(review.rating.toFloat(), 20.dp, 2.dp)
                             }
                         }
