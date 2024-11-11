@@ -213,18 +213,11 @@ fun Map(
                     deselectMapItem()
                     selectMapItem(item)
 
-                    // Ovim valjda kazes da ces ti da hendlas sve, da on ne radi nista
-                    // Ako stavis false, marker koji kliknes ce se centrirati na ekranu
+                    // Keep true
                     true
                 }
             )
         }
-
-//        Marker(
-//            state = MarkerState(position = nis),
-//            title = "Nis",
-//            snippet = "Marker in Nis"
-//        )
     }
 
     fun setMapViewToMyLocation() {
@@ -394,6 +387,13 @@ fun Map(
                                         }
                                 )
                             }
+                        }
+                    }
+
+                    // Hack ali radi
+                    LaunchedEffect(filtersViewModel.userTags.size) {
+                        if (filtersViewModel.userTags.isNotEmpty()) {
+                            onFiltersChanged()
                         }
                     }
 

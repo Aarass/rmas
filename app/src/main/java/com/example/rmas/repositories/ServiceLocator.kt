@@ -6,4 +6,5 @@ object ServiceLocator {
     val tagRepository = TagRepository()
     val mapItemRepository = MapItemRepository()
     val reviewRepository = ReviewRepository()
+    val pointsRepository = PointsRepository()
 }

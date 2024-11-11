@@ -1,5 +1,6 @@
 package com.example.rmas.screens.home
 
+import android.util.Log
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -139,6 +140,8 @@ fun MapItemPreview(
         }
         HorizontalDivider()
 
+        var myReview by rememberSaveable { mutableStateOf(null as Review?) }
+
         var comment by rememberSaveable { mutableStateOf("") }
         var rating by rememberSaveable { mutableIntStateOf(0) }
 
@@ -150,9 +153,11 @@ fun MapItemPreview(
 
             reviews.find { review ->
                 review.userId == currentUser?.uid
-            }?.let { myReview ->
-                rating = myReview.rating
-                comment = myReview.comment ?: ""
+            }?.let {
+                myReview = it
+                rating = it.rating
+                comment = it.comment ?: ""
+                Log.i("jkl", "$myReview")
             }
         }
 
@@ -241,7 +246,8 @@ fun MapItemPreview(
                             onClick = {
                                 currentUser?.let { user ->
                                     if (rating != 0) {
-                                        reviewsViewModel.createReview(user.uid, item.id, rating, comment.ifEmpty { null }) { newReview ->
+                                        reviewsViewModel.upsertReview(user.uid, item.id, item.authorUid, rating, comment.ifEmpty { null }) { newReview ->
+                                            myReview = newReview
                                             reviews.indexOfFirst { review ->
                                                 review.userId == currentUser.uid
                                             }.let { index ->
@@ -249,8 +255,17 @@ fun MapItemPreview(
                                                     reviews[index] = newReview
                                                 } else {
                                                     reviews.add(newReview)
-
                                                 }
+                                            }
+                                        }
+                                    } else {
+                                        comment = ""
+                                        myReview?.let {
+                                            reviewsViewModel.deleteReview(item, it)
+                                            reviews.indexOfFirst { review ->
+                                                review.userId == currentUser.uid
+                                            }.let { index ->
+                                                reviews.removeAt(index)
                                             }
                                         }
                                     }

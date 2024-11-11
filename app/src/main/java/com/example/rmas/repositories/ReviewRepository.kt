@@ -19,10 +19,17 @@ class ReviewRepository {
         }
     }
 
-    suspend fun postReview(userId: String, mapItemId: String, rating: Int, comment: String?): Review {
+    suspend fun getReview(mapItemId: String, reviewId: String): DocumentSnapshot {
+        return Firebase.firestore
+            .collection("mapItems").document(mapItemId)
+            .collection("reviews").document(reviewId)
+            .get().await()
+    }
+
+    suspend fun upsertReview(id: String, mapItemId: String, rating: Int, comment: String?): Review {
         Firebase.firestore
             .collection("mapItems").document(mapItemId)
-            .collection("reviews").document(userId)
+            .collection("reviews").document(id)
             .set(
                 hashMapOf(
                     "rating" to rating,
@@ -30,20 +37,13 @@ class ReviewRepository {
                 )
             ).await()
 
-        return reviewFromDocument(
-            Firebase.firestore
-                .collection("mapItems").document(mapItemId)
-                .collection("reviews").document(userId)
-                .get().await()
-        )
+        return Review.from(getReview(mapItemId, id))
     }
 
-
-    private fun reviewFromDocument(document: DocumentSnapshot): Review {
-        return Review(
-            userId = document.id,
-            rating = document.getField<Int>("rating") ?: 3,
-            comment = document.getField<String>("comment"),
-        )
+    suspend fun deleteReview(mapItemId: String, reviewId: String) {
+        Firebase.firestore
+            .collection("mapItems").document(mapItemId)
+            .collection("reviews").document(reviewId)
+            .delete().await()
     }
 }
