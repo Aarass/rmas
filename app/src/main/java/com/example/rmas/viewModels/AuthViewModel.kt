@@ -101,6 +101,7 @@ class AuthViewModel: ViewModel() {
                             fullName = "$name $surname",
                             phoneNumber = phoneNumber,
                             imageUrl = uploadedImageUrl.toString(),
+                            points = 0.0
                         )
                     }
                 ).awaitAll()

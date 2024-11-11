@@ -9,12 +9,17 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue.serverTimestamp
 import com.google.firebase.firestore.Filter
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 
 class UserRepository {
     private var auth: FirebaseAuth = Firebase.auth
     private val db: FirebaseFirestore = Firebase.firestore
+
+    suspend fun getLeaderboard(): List<User> {
+        return db.collection("users").orderBy("points", Query.Direction.DESCENDING).get().await().map { User.from(it) }
+    }
 
     suspend fun getUser(userUid: String): User? {
         val document = db.collection("users").document(userUid).get().await()

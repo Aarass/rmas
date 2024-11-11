@@ -9,6 +9,7 @@ data class User(
     val fullName: String,
     val phoneNumber: String,
     val imageUrl: String,
+    val points: Double,
 ) {
     companion object {
         fun from(document: DocumentSnapshot): User {
@@ -17,6 +18,7 @@ data class User(
                 fullName = document.getField("fullName") ?: "",
                 phoneNumber = document.getField("phoneNumber") ?: "",
                 imageUrl = document.getField("imageUrl") ?: "",
+                points = document.getField("points") ?: 0.0,
             )
         }
     }

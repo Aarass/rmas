@@ -140,7 +140,7 @@ fun MapItemPreview(
         }
         HorizontalDivider()
 
-        var myReview by rememberSaveable { mutableStateOf(null as Review?) }
+        var myReview by remember { mutableStateOf(null as Review?) }
 
         var comment by rememberSaveable { mutableStateOf("") }
         var rating by rememberSaveable { mutableIntStateOf(0) }

@@ -85,7 +85,6 @@ fun HomeRouterOutlet(
         }
         composable(HomeRoutes.USERS_SCREEN) {
             Users(
-                innerPadding,
             )
         }
     }

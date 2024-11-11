@@ -33,18 +33,22 @@ class PointsRepository {
         val userDoc = Firebase.firestore.collection("users").document(userId)
         val pointsDoc = userDoc.collection("points").document(id)
 
-        Firebase.firestore.runTransaction { transaction ->
-            val userSnapshot = transaction.get(userDoc)
-            val pointsSnapshot = transaction.get(pointsDoc)
-            val oldPoints = userSnapshot.getDouble("points")!!
-            val points = pointsSnapshot.getDouble("value")!!
-            val newPoints = oldPoints - points
-            Log.i("uio", "$newPoints = $oldPoints - $points")
-            transaction.update(userDoc, "points", newPoints)
+        try {
+            Firebase.firestore.runTransaction { transaction ->
+                val userSnapshot = transaction.get(userDoc)
+                val pointsSnapshot = transaction.get(pointsDoc)
+                val oldPoints = userSnapshot.getDouble("points")!!
+                val points = pointsSnapshot.getDouble("value")!!
+                val newPoints = oldPoints - points
+                Log.i("uio", "$newPoints = $oldPoints - $points")
+                transaction.update(userDoc, "points", newPoints)
 
-            // Success
-            null
-        }.await()
-        Firebase.firestore.collection("users").document(userId).collection("points").document(id).delete().await()
+                // Success
+                null
+            }.await()
+            Firebase.firestore.collection("users").document(userId).collection("points").document(id).delete().await()
+        } catch (_: Exception) {
+
+        }
     }
 }
