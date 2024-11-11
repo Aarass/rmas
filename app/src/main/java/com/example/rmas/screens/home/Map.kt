@@ -59,7 +59,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -84,7 +83,6 @@ import com.example.rmas.R
 import com.example.rmas.models.Filters
 import com.example.rmas.models.MapItem
 import com.example.rmas.models.User
-import com.example.rmas.models.UserTag
 import com.example.rmas.ui.theme.resetSystemNavigationTheme
 import com.example.rmas.ui.theme.setDarkStatusBarIcons
 import com.example.rmas.viewModels.FiltersViewModel
@@ -399,13 +397,9 @@ fun Map(
                         }
                     }
 
-                    val selected = remember { mutableStateListOf<UserTag>().apply {
-                        this.addAll(filtersViewModel.userTags.values)
-                    } }
-
                     Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                         Spacer(modifier = Modifier.width(16.dp))
-                        selected.forEachIndexed { index, it ->
+                        filtersViewModel.userTags.values.forEachIndexed { index, it ->
                             FilterChip(
                                 elevation = SelectableChipElevation(
                                     elevation = 10.dp,
@@ -416,9 +410,6 @@ fun Map(
                                     disabledElevation = 10.dp,
                                 ),
                                 onClick = {
-                                    selected[index] = it.copy(
-                                        selected = !it.selected
-                                    )
                                     filtersViewModel.setTagValue(it.tag.id, !it.selected)
                                     onFiltersChanged()
                                 },

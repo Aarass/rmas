@@ -2,6 +2,7 @@ package com.example.rmas.viewModels
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -19,10 +20,29 @@ import kotlinx.coroutines.launch
 
 @OptIn(FlowPreview::class)
 class FiltersViewModel: ViewModel() {
-    private val allTags = ServiceLocator.tagRepository.getAllTags()
+    private val allTags = mutableListOf<Tag>()
 
-    var currentFilters = Filters(activeTags = allTags.map { it.id })
+    private val _userTags = mutableStateMapOf<String, UserTag>()
+    val userTags = _userTags as Map<String, UserTag>
+
+    var currentFilters = Filters()
         private set
+
+    init {
+        viewModelScope.launch {
+            allTags.addAll(ServiceLocator.tagRepository.getAllTags())
+
+            _userTags.putAll(
+                allTags.map {
+                    it.id to UserTag(it)
+                }
+            )
+
+            currentFilters = currentFilters.copy(
+                activeTags = allTags.map { it.id }
+            )
+        }
+    }
 
     private val authorsQuery = MutableSharedFlow<String>()
     private val queriedAuthors = mutableStateListOf<User>()
@@ -68,14 +88,6 @@ class FiltersViewModel: ViewModel() {
         }
     }
 
-    private val _userTags = mutableMapOf<String, UserTag>().apply {
-        this.putAll(
-            allTags.map {
-                it.id to UserTag(it)
-            }
-        )
-    }
-    val userTags = _userTags as Map<String, UserTag>
 
     fun setTagValue(id: String, value: Boolean) {
         _userTags[id] = _userTags[id]?.copy(selected = value) ?: throw Exception("There is no tag with passed id")

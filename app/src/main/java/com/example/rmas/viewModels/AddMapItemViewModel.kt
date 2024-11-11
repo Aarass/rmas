@@ -5,24 +5,33 @@ import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.rmas.models.MapItem
+import com.example.rmas.models.Tag
 import com.example.rmas.models.UserTag
 import com.example.rmas.repositories.ServiceLocator
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.launch
 import java.util.UUID
 import kotlin.random.Random
 
 class AddMapItemViewModel: ViewModel() {
-    private val allTags = ServiceLocator.tagRepository.getAllTags()
+    private val allTags = mutableStateListOf<Tag>()
 
-    private val _selectedTags = mutableStateMapOf<String, UserTag>().apply {
-        this.putAll(
-            allTags.map { tag ->
-                tag.id to UserTag(tag, false)
-            }
-        )
-    }
+    private val _selectedTags = mutableStateMapOf<String, UserTag>()
     val selectedTags = _selectedTags as Map<String, UserTag>
+
+    init {
+        viewModelScope.launch {
+            allTags.addAll(ServiceLocator.tagRepository.getAllTags())
+
+            _selectedTags.putAll(
+                allTags.map { tag ->
+                    tag.id to UserTag(tag, false)
+                }
+            )
+        }
+    }
 
     fun setTagValue(id: String, value: Boolean) {
         _selectedTags[id] = _selectedTags[id]?.copy(selected = value) ?: throw Exception("There is no tag with passed id")
