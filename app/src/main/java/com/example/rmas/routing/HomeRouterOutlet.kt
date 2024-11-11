@@ -41,7 +41,12 @@ fun HomeRouterOutlet(
     openAddMapItemScreen: (location: LatLng) -> Unit,
     closeAddMapItemScreen: () -> Unit,
     contentResolver: ContentResolver,
-    mapItemsViewModel: MapItemsViewModel = viewModel(),
+    mapItemsViewModel: MapItemsViewModel = viewModel(
+        factory = MapItemsViewModel.Factory,
+        extras = MutableCreationExtras().apply {
+            set(MapItemsViewModel.LOCATION_PROVIDER, locationClient)
+        },
+    ),
     filtersViewModel: FiltersViewModel = viewModel(
         factory = FiltersViewModel.Factory,
         extras = MutableCreationExtras().apply {
