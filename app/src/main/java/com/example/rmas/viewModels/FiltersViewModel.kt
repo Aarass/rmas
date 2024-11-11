@@ -1,16 +1,11 @@
 package com.example.rmas.viewModels
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.rmas.models.Filters
 import com.example.rmas.models.Tag
 import com.example.rmas.models.User
@@ -23,14 +18,11 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
 @OptIn(FlowPreview::class)
-class FiltersViewModel(val onFiltersChanged: (Filters) -> Unit = {}): ViewModel() {
+class FiltersViewModel: ViewModel() {
     private val allTags = ServiceLocator.tagRepository.getAllTags()
 
-    private var currentFilters = Filters(activeTags = allTags.map { it.id })
-        set(value) {
-            field = value
-            onFiltersChanged(value)
-        }
+    var currentFilters = Filters(activeTags = allTags.map { it.id })
+        private set
 
     private val authorsQuery = MutableSharedFlow<String>()
     private val queriedAuthors = mutableStateListOf<User>()
@@ -93,22 +85,9 @@ class FiltersViewModel(val onFiltersChanged: (Filters) -> Unit = {}): ViewModel(
         )
     }
 
-    fun setFilters(authorId: String?, dateRange: Pair<Long?, Long?>, distance: Float?) {
+    fun setFilters(author: User?, dateRange: Pair<Long?, Long?>, distance: Float?) {
         currentFilters = currentFilters.copy(
-            authorId = authorId, dateRange = dateRange, locationRange = distance
+            author = author, dateRange = dateRange, locationRange = distance
         )
-    }
-
-    companion object {
-        val MAP_ITEMS_VIEW_MODEL_KEY= object : CreationExtras.Key<MapItemsViewModel> {}
-
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val mapItemsViewModel = this[MAP_ITEMS_VIEW_MODEL_KEY] as MapItemsViewModel
-                FiltersViewModel { filters ->
-                    mapItemsViewModel.onFiltersChanged(filters)
-                }
-            }
-        }
     }
 }

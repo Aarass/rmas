@@ -16,7 +16,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -66,6 +65,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rmas.R
+import com.example.rmas.models.MapItem
 import com.example.rmas.models.User
 import com.example.rmas.models.UserTag
 import com.example.rmas.utility.ClearableImage
@@ -88,6 +88,7 @@ fun AddMapItemScreen(
     contentResolver: ContentResolver,
     startLoadingAnimation: () -> Unit,
     stopLoadingAnimation: () -> Unit,
+    onNewMapItem: (MapItem) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -147,7 +148,7 @@ fun AddMapItemScreen(
                         ) {
                             author?.let { author ->
                                 location?.let { location ->
-                                    Content(close, innerPadding, newImageUriFlow, addImage = openCamera, addMapItemViewModel, author.uid, location, longLastingCoroutineScope, contentResolver, startLoadingAnimation, stopLoadingAnimation)
+                                    Content(close, innerPadding, newImageUriFlow, addImage = openCamera, addMapItemViewModel, author.uid, location, longLastingCoroutineScope, contentResolver, startLoadingAnimation, stopLoadingAnimation, onNewMapItem)
                                 }
                             }
                         }
@@ -171,6 +172,7 @@ private fun Content(
     contentResolver: ContentResolver,
     startLoadingAnimation: () -> Unit,
     stopLoadingAnimation: () -> Unit,
+    onNewMapItem: (MapItem) -> Unit,
 ) {
     val configuration = LocalConfiguration.current
 
@@ -271,7 +273,7 @@ private fun Content(
                                 close()
                                 startLoadingAnimation()
                                 Log.i("map items", "map item upload about to start")
-                                addMapItemViewModel.uploadNewMapItem(
+                                val newMapItem = addMapItemViewModel.uploadNewMapItem(
                                     addMapItemViewModel.images,
                                     addMapItemViewModel.selectedTags.values,
                                     title,
@@ -281,6 +283,7 @@ private fun Content(
                                     contentResolver,
                                 )
                                 stopLoadingAnimation()
+                                onNewMapItem(newMapItem)
                                 Log.i("map items", "map item upload successfully done")
                             } catch (err: Exception) {
 

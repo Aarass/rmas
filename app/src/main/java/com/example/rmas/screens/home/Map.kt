@@ -3,6 +3,7 @@ package com.example.rmas.screens.home
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ContentResolver
+import android.location.Location
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -62,7 +63,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,18 +78,16 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.viewmodel.MutableCreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.rmas.R
+import com.example.rmas.models.Filters
 import com.example.rmas.models.MapItem
 import com.example.rmas.models.User
 import com.example.rmas.models.UserTag
 import com.example.rmas.ui.theme.resetSystemNavigationTheme
 import com.example.rmas.ui.theme.setDarkStatusBarIcons
 import com.example.rmas.viewModels.FiltersViewModel
-import com.example.rmas.viewModels.MapItemsViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -125,6 +123,7 @@ fun Map(
     openAddMapItemScreen: (location: LatLng) -> Unit,
     closeAddMapItemScreen: () -> Unit,
     mapItems: List<MapItem>,
+    queryMapItems: (Filters, Location) -> Unit,
     selectedMapItem: MapItem?,
     selectMapItem: (MapItem) -> Unit,
     deselectMapItem: () -> Unit,
@@ -139,9 +138,6 @@ fun Map(
 
     var profileDialogVisible  by remember { mutableStateOf(false) }
     var filtersDialogVisible by remember { mutableStateOf(false) }
-
-
-    val nis = LatLng(43.321445, 21.896104)
 
     val uiSettings  = remember {
         MapUiSettings(
@@ -259,7 +255,7 @@ fun Map(
 
     Log.i("asd", "${state.bottomSheetState.currentValue} ${state.bottomSheetState.targetValue}")
 
-    var isNewLaunch by rememberSaveable { mutableStateOf(true) }
+//    var isNewLaunch by rememberSaveable { mutableStateOf(true) }
 
 
 //    if (state.bottomSheetState.currentValue == state.bottomSheetState.targetValue) {
@@ -278,6 +274,14 @@ fun Map(
 //            }
 //        }
 //    }
+
+    val onFiltersChanged = {
+        coroutineScope.launch {
+            val location = locationClient.lastLocation.await()
+            val filters = filtersViewModel.currentFilters
+            queryMapItems(filters, location)
+        }
+    }
 
     // UI Layer
     Box(
@@ -416,6 +420,7 @@ fun Map(
                                         selected = !it.selected
                                     )
                                     filtersViewModel.setTagValue(it.tag.id, !it.selected)
+                                    onFiltersChanged()
                                 },
                                 label = {
                                     Text(it.tag.name)
@@ -493,9 +498,10 @@ fun Map(
 
     if (filtersDialogVisible) {
         FiltersDialog(
-            onConfirmation = { authorId, dataRange, distance ->
-                filtersViewModel.setFilters(authorId, dataRange, distance)
+            onConfirmation = { author, dataRange, distance ->
+                filtersViewModel.setFilters(author, dataRange, distance)
                 filtersDialogVisible = false
+                onFiltersChanged()
             },
             onDismissRequest = {
                 filtersDialogVisible = false

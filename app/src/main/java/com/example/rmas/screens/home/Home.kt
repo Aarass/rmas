@@ -4,14 +4,11 @@ import android.app.Activity
 import android.content.ContentResolver
 import android.net.Uri
 import android.util.Log
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Map
@@ -48,7 +45,7 @@ import com.example.rmas.routing.HomeRouterOutlet
 import com.example.rmas.routing.HomeRoutes
 import com.example.rmas.ui.theme.resetSystemNavigationTheme
 import com.example.rmas.ui.theme.setDarkStatusBarIcons
-import com.example.rmas.viewModels.FiltersViewModel
+import com.example.rmas.viewModels.MapItemsViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.model.LatLng
@@ -66,7 +63,8 @@ fun Home(
     openCamera: () -> Unit,
     newImageUriFlow: SharedFlow<Uri>,
     locationClient: FusedLocationProviderClient,
-    contentResolver: ContentResolver
+    contentResolver: ContentResolver,
+    mapItemsViewModel: MapItemsViewModel = viewModel(),
 ) {
     val window = (LocalContext.current as Activity).window
 
@@ -172,7 +170,8 @@ fun Home(
             navigateToMap = {
                 navController.navigate(HomeRoutes.MAP_SCREEN)
                 currentRoute.value = HomeRoutes.MAP_SCREEN
-            }
+            },
+            mapItemsViewModel = mapItemsViewModel,
         )
     }
 
@@ -199,6 +198,10 @@ fun Home(
         },
         stopLoadingAnimation = {
             isLoadingIndicatorVisible = false
+        },
+        onNewMapItem = { item ->
+            mapItemsViewModel.addNewMapItem(item)
+
         }
     )
 

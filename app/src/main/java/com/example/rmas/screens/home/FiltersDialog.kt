@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -47,12 +46,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogWindowProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.rmas.R
@@ -62,7 +59,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.log10
-import kotlin.math.max
 import kotlin.math.pow
 
 //@Preview
@@ -75,7 +71,7 @@ import kotlin.math.pow
 //}
 
 @Composable
-fun FiltersDialog(modifier: Modifier = Modifier, onConfirmation: (authorId: String?, dataRange: Pair<Long?, Long?>, distance: Float?) -> Unit, onDismissRequest: () -> Unit, filtersViewModel: FiltersViewModel) {
+fun FiltersDialog(modifier: Modifier = Modifier, onConfirmation: (author: User?, dataRange: Pair<Long?, Long?>, distance: Float?) -> Unit, onDismissRequest: () -> Unit, filtersViewModel: FiltersViewModel) {
     Dialog(onDismissRequest = { onDismissRequest() }) {
         (LocalView.current.parent as DialogWindowProvider).window.setDimAmount(0.2f)
         Card(
@@ -88,15 +84,15 @@ fun FiltersDialog(modifier: Modifier = Modifier, onConfirmation: (authorId: Stri
         ) {
             val authorsQuery = filtersViewModel.authorsQueryState
             val queriedAuthors = remember { filtersViewModel.getQueriedAuthorsState() }
-            var selectedAuthor by remember { mutableStateOf<User?>(null)}
+            var selectedAuthor by remember { mutableStateOf(filtersViewModel.currentFilters.author)}
             val selectAuthor = { author: User ->
                 selectedAuthor = author
                 filtersViewModel.authorsQueryChanged("")
             }
 
-            var dateRange by remember { mutableStateOf(Pair<Long?, Long?>(null, null))}
+            var dateRange by remember { mutableStateOf(filtersViewModel.currentFilters.dateRange)}
 
-            var maxDistance by remember { mutableStateOf(null as Float?) }
+            var maxDistance by remember { mutableStateOf(filtersViewModel.currentFilters.locationRange) }
 
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -199,7 +195,7 @@ fun FiltersDialog(modifier: Modifier = Modifier, onConfirmation: (authorId: Stri
 
                 DateRange(dateRange, onValueChange = { newDateRange -> dateRange = newDateRange })
 
-                var sliderPosition by remember { mutableFloatStateOf(1.0f) }
+                var sliderPosition by remember { mutableFloatStateOf(maxDistance?.let { 1f / 3f * log10(it) } ?: 1.0f) }
                 Column {
                     Slider(
                         value = sliderPosition,
@@ -243,7 +239,7 @@ fun FiltersDialog(modifier: Modifier = Modifier, onConfirmation: (authorId: Stri
                     }
                     TextButton(
                         onClick = { onConfirmation(
-                            selectedAuthor?.uid,
+                            selectedAuthor,
                             dateRange,
                             maxDistance
                         ) },

@@ -1,35 +1,31 @@
 package com.example.rmas.viewModels
 
-import android.annotation.SuppressLint
-import android.util.Log
+import android.location.Location
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.rmas.models.Filters
 import com.example.rmas.models.MapItem
 import com.example.rmas.repositories.ServiceLocator
-import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
-class MapItemsViewModel(private val locationProvider: FusedLocationProviderClient): ViewModel() {
-    private val mapItems: SnapshotStateList<MapItem> = mutableStateListOf<MapItem>()
+class MapItemsViewModel: ViewModel() {
+    private val mapItems = mutableStateListOf<MapItem>()
 
     private var selectedItem = mutableStateOf<MapItem?>(null)
 
-    fun onFiltersChanged(filters: Filters) {
-        Log.i("jkl", "Promena, $filters")
+    fun queryMapItems(filters: Filters, usersLocation: Location) {
         viewModelScope.launch {
+            val items = ServiceLocator.mapItemRepository.getMapItems(filters, usersLocation)
             mapItems.clear()
-            mapItems.addAll(ServiceLocator.mapItemRepository.getMapItems(filters))
+            mapItems.addAll(items)
         }
+    }
+
+    fun addNewMapItem(item: MapItem) {
+        mapItems.add(item)
     }
 
     fun getMapItems(): List<MapItem> {
@@ -46,16 +42,5 @@ class MapItemsViewModel(private val locationProvider: FusedLocationProviderClien
 
     fun deselectItem() {
         selectedItem.value = null
-    }
-
-    companion object {
-        val LOCATION_PROVIDER= object : CreationExtras.Key<FusedLocationProviderClient> {}
-
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val locationProvider = this[LOCATION_PROVIDER] as FusedLocationProviderClient
-                MapItemsViewModel(locationProvider)
-            }
-        }
     }
 }

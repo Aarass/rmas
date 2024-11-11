@@ -1,5 +1,6 @@
 package com.example.rmas.repositories
 
+import android.location.Location
 import android.net.Uri
 import android.util.Log
 import com.example.rmas.models.Filters
@@ -7,46 +8,72 @@ import com.example.rmas.models.MapItem
 import com.example.rmas.models.UserTag
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.Firebase
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue.serverTimestamp
 import com.google.firebase.firestore.Filter
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 import java.util.Date
+import kotlin.math.PI
+import kotlin.math.cos
 
 class MapItemRepository {
     private val collectionName = "mapItems"
 
-    suspend fun getMapItems(filters: Filters): List<MapItem> {
+    suspend fun getMapItems(filters: Filters, location: Location): List<MapItem> {
+        Log.i("jkl", filters.toString())
+
+
         var query = Firebase.firestore.collection(collectionName) as Query
 
-
-        // Todo prepraviti da se uvek koriste svi filteri da ne bi moralo da se
-        // pravi poseban indeks za svaku kombinaciju filtera
-        // kapiram da za authorId mozda nece moci
-
-        // Takodje resiti kako dolazi korisnikova lokacije dovde
-        // !!! To je mozna i najhitnije !!!
-
-        filters.authorId?.let { query = query.where(Filter.equalTo("authorUid", it)) }
+        filters.author?.let { query = query.where(Filter.equalTo("authorUid", it.uid)) }
         query = query.where(Filter.greaterThanOrEqualTo("createdAt", Date(filters.dateRange.first ?: 0)))
         query = query.where(Filter.lessThanOrEqualTo("createdAt", filters.dateRange.second?.run { Date(this) } ?: Date() ))
-        filters.locationRange?.let {
-            query = query.where(Filter.and(
-                Filter.greaterThanOrEqualTo("location.latitude", 42f),
-                Filter.lessThanOrEqualTo("location.latitude", 44f),
-                Filter.greaterThanOrEqualTo("location.longitude", 20f),
-                Filter.lessThanOrEqualTo("location.longitude", 22f),
-            ))
-        }
-        if (filters.activeTags.isNotEmpty()) {
-            filters.activeTags.let {
-                query = query.where(Filter.arrayContainsAny("tags", it))
-            }
-        }
+        query = query.where(Filter.arrayContainsAny("tags", filters.activeTags.ifEmpty { listOf("-99") }))
 
-        return query.limit(100).get().await().documents.map { MapItem.from(it) }
+        query = filters.locationRange?.let { radius ->
+            val latitudeRad = location.latitude * PI / 180.0
+            val deltaLatitude = radius / 111f
+            val deltaLongitude = radius / 111f * cos(latitudeRad)
+
+            val top =  location.latitude - deltaLatitude
+            val bottom =  location.latitude + deltaLatitude
+            val left = location.longitude - deltaLongitude
+            val right = location.longitude + deltaLongitude
+
+            Log.i("jkl", "$top, $bottom, $left, $right")
+
+            query.where(Filter.and(
+                Filter.greaterThanOrEqualTo("location.latitude", top),
+                Filter.lessThanOrEqualTo("location.latitude", bottom),
+                Filter.greaterThanOrEqualTo("location.longitude", left),
+                Filter.lessThanOrEqualTo("location.longitude", right),
+            ))
+        } ?: query.where(Filter.and(
+                Filter.greaterThanOrEqualTo("location.latitude", -90),
+                Filter.lessThanOrEqualTo("location.latitude", 90),
+                Filter.greaterThanOrEqualTo("location.longitude", -180),
+                Filter.lessThanOrEqualTo("location.longitude", 180),
+            ))
+
+        return filters.locationRange?.let { radius ->
+            query.limit(100).get().await().documents.map { MapItem.from(it) }.filter { mapItem ->
+                val res = FloatArray(3)
+                Location.distanceBetween(
+                    location.latitude,
+                    location.longitude,
+                    mapItem.location.latitude,
+                    mapItem.location.longitude,
+                    res
+                )
+                val d = res[0]
+
+                Log.i("jkl", d.toString())
+
+                d <= radius * 1000
+            }
+        } ?: query.limit(100).get().await().documents.map { MapItem.from(it) }
+
     }
 
     fun getAllMapItems(callback: (List<MapItem>) -> Unit) {
@@ -68,8 +95,8 @@ class MapItemRepository {
         description: String,
         authorUid: String,
         location: LatLng
-    ) {
-        Firebase.firestore.collection("mapItems").add(
+    ): MapItem {
+        val documentReference = Firebase.firestore.collection("mapItems").add(
             hashMapOf(
                 "authorUid" to authorUid,
 //                "location" to location,
@@ -84,5 +111,7 @@ class MapItemRepository {
                 "createdAt" to serverTimestamp()
             )
         ).await()
+
+        return MapItem.from(documentReference.get().await())
     }
 }

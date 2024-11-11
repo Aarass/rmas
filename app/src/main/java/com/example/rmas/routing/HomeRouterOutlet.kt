@@ -1,11 +1,8 @@
 package com.example.rmas.routing
 
 import android.content.ContentResolver
-import android.util.Log
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.MutableCreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -41,18 +38,8 @@ fun HomeRouterOutlet(
     openAddMapItemScreen: (location: LatLng) -> Unit,
     closeAddMapItemScreen: () -> Unit,
     contentResolver: ContentResolver,
-    mapItemsViewModel: MapItemsViewModel = viewModel(
-        factory = MapItemsViewModel.Factory,
-        extras = MutableCreationExtras().apply {
-            set(MapItemsViewModel.LOCATION_PROVIDER, locationClient)
-        },
-    ),
-    filtersViewModel: FiltersViewModel = viewModel(
-        factory = FiltersViewModel.Factory,
-        extras = MutableCreationExtras().apply {
-            set(FiltersViewModel.MAP_ITEMS_VIEW_MODEL_KEY, mapItemsViewModel)
-        },
-    ),
+    mapItemsViewModel: MapItemsViewModel = viewModel(),
+    filtersViewModel: FiltersViewModel = viewModel(),
 ) {
     val mapItems = mapItemsViewModel.getMapItems()
     val selectedMapItem = mapItemsViewModel.getSelectedItem()
@@ -69,6 +56,9 @@ fun HomeRouterOutlet(
                 openAddMapItemScreen = openAddMapItemScreen,
                 closeAddMapItemScreen = closeAddMapItemScreen,
                 mapItems = mapItems,
+                queryMapItems = { filters, location ->
+                    mapItemsViewModel.queryMapItems(filters, location)
+                },
                 selectedMapItem = selectedMapItem.value,
                 selectMapItem = { item ->
                     mapItemsViewModel.selectItem(item)

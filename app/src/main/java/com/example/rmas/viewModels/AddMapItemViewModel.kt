@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
+import com.example.rmas.models.MapItem
 import com.example.rmas.models.UserTag
 import com.example.rmas.repositories.ServiceLocator
 import com.google.android.gms.maps.model.LatLng
@@ -56,7 +57,7 @@ class AddMapItemViewModel: ViewModel() {
         authorUid: String,
         location: LatLng,
         contentResolver: ContentResolver,
-    ) {
+    ): MapItem {
         val urlsInCloud = images.map { image ->
             ServiceLocator.imageRepository.uploadImage(UUID.randomUUID().toString(), image, contentResolver)
         }
@@ -64,6 +65,6 @@ class AddMapItemViewModel: ViewModel() {
             location.latitude + Random.nextDouble(-0.005, 0.005),
             location.longitude + Random.nextDouble(-0.005, 0.005),
         )
-        ServiceLocator.mapItemRepository.addNewMapItem(urlsInCloud, tags, title, description, authorUid, randomizedLocation)
+        return ServiceLocator.mapItemRepository.addNewMapItem(urlsInCloud, tags, title, description, authorUid, randomizedLocation)
     }
 }
