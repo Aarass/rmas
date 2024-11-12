@@ -1,12 +1,17 @@
 package com.example.rmas.repositories
 
 import android.util.Log
+import com.example.rmas.models.Points
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 
 // ID = [r | c] _ [me | ot] _ otherId _ mapItemId
 class PointsRepository {
+
+    suspend fun getPointsForUser(userId: String): List<Points> {
+        return Firebase.firestore.collection("users").document(userId).collection("points").get().await().map { Points.from(it) }
+    }
 
 
 
