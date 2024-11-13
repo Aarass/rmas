@@ -3,6 +3,7 @@ package com.example.rmas.repositories
 import android.location.Location
 import android.net.Uri
 import android.util.Log
+import androidx.compose.animation.core.snap
 import com.example.rmas.models.Filters
 import com.example.rmas.models.MapItem
 import com.example.rmas.models.UserTag
@@ -76,16 +77,55 @@ class MapItemRepository {
 
     }
 
-    fun getAllMapItems(callback: (List<MapItem>) -> Unit) {
-        Firebase.firestore.collection(collectionName).addSnapshotListener { maybeSnapshot, _ ->
-            try {
-                maybeSnapshot?.let { snapshot ->
-                    callback(snapshot.documents.map { MapItem.from(it) })
-                }
-            } catch (err: Exception) {
-                Log.e("myerr", err.toString())
-            }
+    suspend fun getAllMapItemsInRange(location: Location, maxDistance: Float): List<MapItem> {
+        Log.i("iop", "in getAll")
+        var query = Firebase.firestore.collection(collectionName) as Query
+
+        val latitudeRad = location.latitude * PI / 180.0
+        val deltaLatitude = maxDistance / 111f
+        val deltaLongitude = maxDistance / 111f * cos(latitudeRad)
+
+        val top =  location.latitude - deltaLatitude
+        val bottom =  location.latitude + deltaLatitude
+        val left = location.longitude - deltaLongitude
+        val right = location.longitude + deltaLongitude
+
+        query = query.where(Filter.and(
+            Filter.greaterThanOrEqualTo("location.latitude", top),
+            Filter.lessThanOrEqualTo("location.latitude", bottom),
+            Filter.greaterThanOrEqualTo("location.longitude", left),
+            Filter.lessThanOrEqualTo("location.longitude", right),
+        ))
+
+        Log.i("iop", "before query")
+        val snapshots =query.limit(100).get().await().documents
+        Log.i("iop", "after query, $snapshots")
+        return snapshots.map { MapItem.from(it) }.filter { mapItem ->
+            val res = FloatArray(3)
+            Location.distanceBetween(
+                location.latitude,
+                location.longitude,
+                mapItem.location.latitude,
+                mapItem.location.longitude,
+                res
+            )
+            val d = res[0]
+
+            Log.i("jkl", d.toString())
+
+            d <= maxDistance * 1000
         }
+
+
+//        Firebase.firestore.collection(collectionName).addSnapshotListener { maybeSnapshot, _ ->
+//            try {
+//                maybeSnapshot?.let { snapshot ->
+//                    callback(snapshot.documents.map { MapItem.from(it) })
+//                }
+//            } catch (err: Exception) {
+//                Log.e("myerr", err.toString())
+//            }
+//        }
     }
 
     suspend fun addNewMapItem(

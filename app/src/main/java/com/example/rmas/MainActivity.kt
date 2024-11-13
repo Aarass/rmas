@@ -1,7 +1,9 @@
 package com.example.rmas
 
 import android.Manifest
+import android.app.NotificationManager
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -10,6 +12,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore.Images
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -55,7 +58,7 @@ class MainActivity : ComponentActivity() {
                 ActivityResultContracts.RequestMultiplePermissions()
             ) { grants: Map<String, Boolean> ->
                 if (grants.values.all { it }) {
-//                    startForegroundService(serviceIntent)
+                    startForegroundService(serviceIntent)
                 }
             }
 
@@ -63,7 +66,7 @@ class MainActivity : ComponentActivity() {
             ContextCompat.checkSelfPermission(this, Manifest.permission.FOREGROUND_SERVICE) == PackageManager.PERMISSION_GRANTED &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         ) {
-//            startForegroundService(serviceIntent)
+            startForegroundService(serviceIntent)
         } else {
             servicePermissionsLauncher.launch(arrayOf(Manifest.permission.FOREGROUND_SERVICE, Manifest.permission.ACCESS_FINE_LOCATION))
         }
@@ -97,6 +100,17 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val mapItemId = intent.getStringExtra("mapItemId")
+        mapItemId?.let {
+            notificationManager.cancelAll()
+            Log.i("bnm", "Received intent with map item id: $it")
+        } ?: run {
+            Log.i("bnm", "Received intent with no map item id")
+        }
 
         authViewModel.tryToRestoreSession()
     }

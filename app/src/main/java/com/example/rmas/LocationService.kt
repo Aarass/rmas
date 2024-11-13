@@ -8,8 +8,11 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
@@ -17,12 +20,12 @@ import android.os.Looper
 import android.os.Message
 import android.os.Process
 import android.util.Log
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Map
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.example.rmas.models.MapItem
+import com.example.rmas.repositories.ServiceLocator
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.CoroutineScope
@@ -36,8 +39,6 @@ import java.util.TimerTask
 class LocationService : Service() {
     private lateinit var serviceHandler: ServiceHandler
 
-    private val job = SupervisorJob()
-
     companion object ACTIONS {
         const val START = "Start"
         const val STOP = "Stop"
@@ -46,59 +47,12 @@ class LocationService : Service() {
     private val monitoringChannelId = "MonitoringChannelId"
     private val proximityAlertChannelId = "ProximityAlertChannelId"
 
+    private val notifiedMapItems = mutableSetOf<String>()
 
-    private inner class ServiceHandler(
-        locationClient: FusedLocationProviderClient,
-        scope: CoroutineScope,
-        looper: Looper
-    ) : Handler(looper) {
-        private val timer = Timer()
-        private val work: TimerTask = Work(locationClient, scope)
-
-        private var started = false
-
-        override fun handleMessage(msg: Message) {
-            if (!started) {
-                timer.schedule(work, 0L, 5000L)
-                started = true
-            }
-        }
-    }
-
-    private inner class Work(
-        private val locationClient: FusedLocationProviderClient,
-        private  val scope: CoroutineScope
-    ): TimerTask() {
-        override fun run() {
-            if (ContextCompat.checkSelfPermission(
-                this@LocationService,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(
-                this@LocationService,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED) {
-                scope.launch {
-                    try {
-                        val location = locationClient.lastLocation.await()
-                        Log.i("LocationService", location.latitude.toString() + " " + location.longitude.toString())
-                        showNotification()
-                    } catch (e: Exception) {
-                        Log.e("LocationService", e.toString())
-                    }
-                }
-            } else {
-                Log.e("LocationService", "No location permission")
-            }
-        }
-    }
+    private val job = SupervisorJob()
 
     override fun onCreate() {
-        val handlerThread = HandlerThread(
-            "Location service thread",
-            Process.THREAD_PRIORITY_BACKGROUND
-        )
-        handlerThread.start()
+        val handlerThread = HandlerThread("Location service thread", Process.THREAD_PRIORITY_BACKGROUND).apply { start() }
 
         serviceHandler = ServiceHandler(
             locationClient = LocationServices.getFusedLocationProviderClient(this),
@@ -112,21 +66,15 @@ class LocationService : Service() {
         startForeground("MonitoringNotification".hashCode(), createMonitoringNotification())
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        Log.i("LocationService", "Service starting")
+    override fun onStartCommand(receivedIntent: Intent, flags: Int, startId: Int): Int {
+        Log.i("LocationService", "$receivedIntent")
 
-        Log.i("LocationService", intent.action ?: "No Action")
-        Log.i("LocationService", intent.toString())
-
-        when (intent.action) {
+        when (receivedIntent.action) {
             null, START -> {
-                Log.i("LocationService", intent.toString())
                 serviceHandler.sendMessage(serviceHandler.obtainMessage())
             }
             STOP -> {
                 val isStopped = stopSelfResult(startId)
-
-                Log.i("LocationService", if (isStopped) "Stopped" else "Not stopped")
             }
             else -> {
                 throw Exception("Unsupported action")
@@ -136,108 +84,136 @@ class LocationService : Service() {
         return START_STICKY
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        job.cancel()
+    // Lazy je jer ako pokusam inline dobijem gresku da je this null
+    // Mogao sam u init ali onda promenljiva treba da bude nullable, ovako izbegavam sve to
 
-        Log.i("LocationService", "Service destroying")
+    private val pendingOpenAppIntent by lazy {
+        val intent = Intent(this, MainActivity::class.java)
+        PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
     }
 
-    override fun onBind(intent: Intent): IBinder? {
-        return null
+    private val pendingStopServiceIntent by lazy {
+        val intent = Intent(this, LocationService::class.java).apply { action = STOP }
+        PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
     }
 
     private fun createMonitoringNotification(): Notification {
-        val openIntent = Intent(this, MainActivity::class.java)
-        val stopIntent = Intent(this, LocationService::class.java).apply {
-            action = STOP
-        }
-
-        val pendingOpenIntent = PendingIntent.getActivity(this, 0, openIntent, PendingIntent.FLAG_IMMUTABLE)
-        val pendingStopIntent = PendingIntent.getService(this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE)
-
         return NotificationCompat.Builder(this, monitoringChannelId)
             .setSmallIcon(R.drawable.logo)
-            .setContentTitle("asgasgdfgas")
-            .setContentText("asdasfs")
+            .setContentTitle("Looking for interesting places nearby")
             .setOngoing(true)
-            .addAction(R.drawable.tableoutlined, "Open app", pendingOpenIntent)
-            .addAction(R.drawable.tableoutlined, "Stop", pendingStopIntent)
+            .addAction(R.drawable.tableoutlined, "Open app", pendingOpenAppIntent)
+            .addAction(R.drawable.tableoutlined, "Stop", pendingStopServiceIntent)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .build()
     }
 
-    private fun showNotification() {
-        val builder = NotificationCompat.Builder(this, proximityAlertChannelId)
-            .setSmallIcon(R.drawable.logo)
-            .setContentTitle("asgasgdfgas")
-            .setContentText("asdasfs")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+    private fun sendProximityNotification(mapItem: MapItem) {
+        val intent = Intent(this, MainActivity::class.java)
+        intent.setFlags(FLAG_ACTIVITY_NEW_TASK)
+        intent.putExtras(Bundle().apply {
+            putString("mapItemId", mapItem.id)
+        })
 
-        val notificationId = (Math.random() * 100).toInt()
+        val showMapItemPendingIntent = PendingIntent.getActivity(this, mapItem.id.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE)
+
+        val notificationId = mapItem.id.hashCode()
+        val notification = NotificationCompat.Builder(this, proximityAlertChannelId)
+            .setSmallIcon(R.drawable.logo)
+            .setContentTitle("Map Item nearby")
+            .setContentText(mapItem.title)
+            .setContentIntent(showMapItemPendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
 
         with(NotificationManagerCompat.from(this)) {
-            if (ActivityCompat.checkSelfPermission(
-                    this@LocationService,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                return
+            if (ActivityCompat.checkSelfPermission(this@LocationService, Manifest.permission.POST_NOTIFICATIONS ) == PackageManager.PERMISSION_GRANTED) {
+                notify(notificationId, notification)
             }
-
-            notify(notificationId, builder.build())
         }
     }
 
-//    ProximityAlertNotificationChannel
-//    MonitoringNotificationChannel
+    private inner class ServiceHandler(
+        locationClient: FusedLocationProviderClient,
+        scope: CoroutineScope,
+        looper: Looper
+    ) : Handler(looper) {
+        private val timer = Timer()
+        private val work = Work(locationClient, scope)
+
+        private var started = false
+
+        override fun handleMessage(msg: Message) {
+            if (!started) {
+                timer.schedule(work, 0L, 5000L)
+                started = true
+            }
+        }
+    }
+
+    private inner class Work(
+        private val locationClient: FusedLocationProviderClient,
+        private  val coroutineScope: CoroutineScope
+    ): TimerTask() {
+
+        private suspend fun actualWork(location: Location) {
+            val mapItemsInRange = ServiceLocator.mapItemRepository.getAllMapItemsInRange(location, 1f)
+
+            mapItemsInRange.forEach {
+                if (!notifiedMapItems.contains(it.id)) {
+                    notifiedMapItems.add(it.id)
+                    sendProximityNotification(it)
+                }
+            }
+        }
+
+        override fun run() {
+            if (ContextCompat.checkSelfPermission(
+                    this@LocationService,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(
+                    this@LocationService,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED) {
+                coroutineScope.launch {
+                    try {
+                        actualWork(locationClient.lastLocation.await())
+                    } catch (e: Exception) {
+                        Log.e("LocationService", e.toString())
+                    }
+                }
+            } else {
+                Log.e("LocationService", "No location permission")
+            }
+        }
+    }
 
     private fun createMonitoringNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                /* id = */ monitoringChannelId,
-                /* name = */ getString(R.string.monitoring_channel_name),
-                /* importance = */ NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = getString(R.string.monitoring_channel_description)
-            }
+            val channel = NotificationChannel(monitoringChannelId, getString(R.string.monitoring_channel_name), NotificationManager.IMPORTANCE_DEFAULT).apply { description = getString(R.string.monitoring_channel_description) }
 
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).apply {
+                createNotificationChannel(channel)
+            }
         }
     }
 
     private fun createProximityAlertNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                /* id = */ proximityAlertChannelId,
-                /* name = */ getString(R.string.proximity_alert_channel_name),
-                /* importance = */ NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = getString(R.string.proximity_alert_channel_description)
-            }
+            val channel = NotificationChannel(proximityAlertChannelId, getString(R.string.proximity_alert_channel_name), NotificationManager.IMPORTANCE_DEFAULT).apply { description = getString(R.string.proximity_alert_channel_description) }
 
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).apply {
+                createNotificationChannel(channel)
+            }
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        job.cancel()
+    }
+
+    override fun onBind(intent: Intent): IBinder? { return null }
 }
-
-//private enum class LocationServiceMessage {
-//    START,
-//    STOP,
-//}
-
-//private fun String?.toLocationServiceMessage(): LocationServiceMessage {
-//    return when(this) {
-//        LocationService.START -> {
-//            LocationServiceMessage.START
-//        }
-//        LocationService.STOP -> {
-//            LocationServiceMessage.STOP
-//        }
-//        else -> {
-//            throw Exception("Unsupported or null action")
-//        }
-//    }
-//}
