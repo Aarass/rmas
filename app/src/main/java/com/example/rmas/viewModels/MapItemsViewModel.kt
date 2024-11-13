@@ -12,6 +12,8 @@ import com.example.rmas.repositories.ServiceLocator
 import kotlinx.coroutines.launch
 
 class MapItemsViewModel: ViewModel() {
+    private var requestedMapItemIdFromNotification: String? = null
+
     private val mapItems = mutableStateListOf<MapItem>()
 
     private var selectedItem = mutableStateOf<MapItem?>(null)
@@ -21,6 +23,13 @@ class MapItemsViewModel: ViewModel() {
             val items = ServiceLocator.mapItemRepository.getMapItems(filters, usersLocation)
             mapItems.clear()
             mapItems.addAll(items)
+
+            requestedMapItemIdFromNotification?.let { requestedId ->
+                items.find { item -> item.id ==  requestedId}?.let {
+                    selectedItem.value = it
+                    requestedMapItemIdFromNotification = null
+                }
+            }
         }
     }
 
@@ -42,5 +51,9 @@ class MapItemsViewModel: ViewModel() {
 
     fun deselectItem() {
         selectedItem.value = null
+    }
+
+    fun setMapItemIdFromNotification(id: String) {
+        requestedMapItemIdFromNotification = id
     }
 }

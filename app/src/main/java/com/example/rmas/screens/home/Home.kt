@@ -39,12 +39,14 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.example.rmas.MainActivity
 import com.example.rmas.R
 import com.example.rmas.models.User
 import com.example.rmas.routing.HomeRouterOutlet
 import com.example.rmas.routing.HomeRoutes
 import com.example.rmas.ui.theme.resetSystemNavigationTheme
 import com.example.rmas.ui.theme.setDarkStatusBarIcons
+import com.example.rmas.viewModels.AuthViewModel
 import com.example.rmas.viewModels.MapItemsViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -64,8 +66,10 @@ fun Home(
     newImageUriFlow: SharedFlow<Uri>,
     locationClient: FusedLocationProviderClient,
     contentResolver: ContentResolver,
-    mapItemsViewModel: MapItemsViewModel = viewModel(),
 ) {
+    // Nav host iz nekog razloga ima svoj viewModel provider, ali meni treba ista instanca viewModel-a kao u mainActivity-u
+    val mapItemsViewModel = viewModel<MapItemsViewModel >(LocalContext.current as MainActivity)
+
     val window = (LocalContext.current as Activity).window
 
     val currentUser by currentUserFlow.collectAsState(null)

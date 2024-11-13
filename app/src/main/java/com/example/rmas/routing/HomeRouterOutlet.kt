@@ -1,6 +1,7 @@
 package com.example.rmas.routing
 
 import android.content.ContentResolver
+import android.util.Log
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel

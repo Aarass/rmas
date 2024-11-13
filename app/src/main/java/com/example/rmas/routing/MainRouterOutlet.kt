@@ -1,15 +1,18 @@
 package com.example.rmas.routing
 
 import android.content.ContentResolver
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.rmas.MainActivity
 import com.example.rmas.enums.AuthStatus
 import com.example.rmas.screens.SignIn
 import com.example.rmas.screens.SignUp

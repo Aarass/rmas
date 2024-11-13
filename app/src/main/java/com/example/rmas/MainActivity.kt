@@ -28,12 +28,14 @@ import com.example.rmas.routing.MainRouterOutlet
 import com.example.rmas.ui.theme.RMASTheme
 import com.example.rmas.viewModels.AuthViewModel
 import com.example.rmas.viewModels.MainViewModel
+import com.example.rmas.viewModels.MapItemsViewModel
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val mainViewModel by viewModels<MainViewModel>()
-    private val authViewModel: AuthViewModel by viewModels<AuthViewModel>()
+    private val authViewModel by viewModels<AuthViewModel>()
+    private val mapItemsViewModel by viewModels<MapItemsViewModel>()
 
     private val launcher = registerForActivityResult(TakePicture()) { isSuccess ->
         if (isSuccess) {
@@ -49,28 +51,6 @@ class MainActivity : ComponentActivity() {
 
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
-        val serviceIntent = Intent(this, LocationService::class.java).apply {
-            action = LocationService.START
-        }
-
-        val servicePermissionsLauncher =
-            registerForActivityResult(
-                ActivityResultContracts.RequestMultiplePermissions()
-            ) { grants: Map<String, Boolean> ->
-                if (grants.values.all { it }) {
-                    startForegroundService(serviceIntent)
-                }
-            }
-
-        if (
-            ContextCompat.checkSelfPermission(this, Manifest.permission.FOREGROUND_SERVICE) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        ) {
-            startForegroundService(serviceIntent)
-        } else {
-            servicePermissionsLauncher.launch(arrayOf(Manifest.permission.FOREGROUND_SERVICE, Manifest.permission.ACCESS_FINE_LOCATION))
-        }
-
         lifecycleScope.launch {
             mainViewModel.takeImageEvent.collect {
                 dispatchTakePictureIntent()
@@ -89,24 +69,41 @@ class MainActivity : ComponentActivity() {
             window.isNavigationBarContrastEnforced = false
         }
 
-        val locationClient = LocationServices.getFusedLocationProviderClient(this)
+        registerForActivityResult( ActivityResultContracts.RequestMultiplePermissions()) { grants ->
+            if (grants.isEmpty()) { throw Exception("Probably, another request is active") }
 
-        setContent {
-            RMASTheme {
-                MainRouterOutlet(contentResolver = contentResolver, locationClient)
+            val foregroundService = grants[Manifest.permission.FOREGROUND_SERVICE]!!
+            val location = grants[Manifest.permission.ACCESS_FINE_LOCATION]!!
+
+            if (foregroundService && location) {
+                val serviceIntent = Intent(this, LocationService::class.java)
+                serviceIntent.action = LocationService.START
+                startForegroundService(serviceIntent)
             }
-        }
+
+            if (location) {
+                val locationClient = LocationServices.getFusedLocationProviderClient(this)
+                setContent {
+                    RMASTheme {
+                        MainRouterOutlet(contentResolver = contentResolver, locationClient)
+                    }
+                }
+            }
+        }.run { launch(arrayOf(Manifest.permission.FOREGROUND_SERVICE, Manifest.permission.ACCESS_FINE_LOCATION)) }
     }
 
     override fun onStart() {
         super.onStart()
 
-
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val mapItemId = intent.getStringExtra("mapItemId")
+
         mapItemId?.let {
             notificationManager.cancelAll()
+
+            mapItemsViewModel.setMapItemIdFromNotification(it)
+
             Log.i("bnm", "Received intent with map item id: $it")
         } ?: run {
             Log.i("bnm", "Received intent with no map item id")
