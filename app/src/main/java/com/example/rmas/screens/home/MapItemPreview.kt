@@ -41,6 +41,7 @@ import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +76,34 @@ fun MapItemPreview(
     getTagById: (tagId: String) -> Tag?,
     reviewsViewModel: ReviewsViewModel = viewModel(),
 ) {
+    var myReview by remember { mutableStateOf(null as Review?) }
+    var comment by rememberSaveable { mutableStateOf("") }
+    var rating by rememberSaveable { mutableIntStateOf(0) }
+
+    val reviews = remember { mutableStateListOf<Review>() }
+
+    var averageRating by rememberSaveable { mutableStateOf<Float?>(null) }
+    var ratingsCount by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(item.id) {
+        reviews.clear()
+        reviews.addAll(reviewsViewModel.getReviewsForMapItem(item.id))
+
+        reviews.find { review ->
+            review.userId == currentUser?.uid
+        }?.let {
+            myReview = it
+            rating = it.rating
+            comment = it.comment ?: ""
+            Log.i("jkl", "$myReview")
+        }
+
+        ratingsCount = reviews.count()
+        if (reviews.isNotEmpty()) {
+            averageRating = reviews.sumOf { it.rating } / reviews.count().toFloat()
+        }
+    }
+
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -90,7 +119,11 @@ fun MapItemPreview(
                     modifier = Modifier.padding(0.dp)
                 )
 
-                StarRatingDisplayWithStats(4.3f, 16120)
+                averageRating?.let { avg ->
+                    ratingsCount?.let { count ->
+                        StarRatingDisplayWithStats(avg, count)
+                    }
+                }
             }
         }
 
@@ -139,27 +172,6 @@ fun MapItemPreview(
             Spacer(modifier = Modifier.width(10.dp))
         }
         HorizontalDivider()
-
-        var myReview by remember { mutableStateOf(null as Review?) }
-
-        var comment by rememberSaveable { mutableStateOf("") }
-        var rating by rememberSaveable { mutableIntStateOf(0) }
-
-        val reviews = remember { mutableStateListOf<Review>() }
-
-        LaunchedEffect(item.id) {
-            reviews.clear()
-            reviews.addAll(reviewsViewModel.getReviewsForMapItem(item.id))
-
-            reviews.find { review ->
-                review.userId == currentUser?.uid
-            }?.let {
-                myReview = it
-                rating = it.rating
-                comment = it.comment ?: ""
-                Log.i("jkl", "$myReview")
-            }
-        }
 
         LazyColumn {
             item {

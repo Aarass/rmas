@@ -15,6 +15,7 @@ class LeaderboardViewModel: ViewModel() {
     fun fetch() {
         viewModelScope.launch {
             val tmp = ServiceLocator.userRepository.getLeaderboard()
+            Log.i("skr", tmp.toString())
             _leaderboard.clear()
             _leaderboard.addAll(tmp)
         }

@@ -73,12 +73,12 @@ fun Users(leaderboardViewModel: LeaderboardViewModel = viewModel()) {
             }
         }
         LazyColumn {
-            itemsIndexed(leaderboard.drop(3)) { i, item ->
+            itemsIndexed(leaderboard.drop(3)) { i, user ->
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(modifier = Modifier.padding(end = 16.dp), text = "${i + 3}")
+                    Text(modifier = Modifier.padding(end = 16.dp), text = "${i + 4}")
 
                     Row(
                         modifier = Modifier.weight(1f),
@@ -86,7 +86,7 @@ fun Users(leaderboardViewModel: LeaderboardViewModel = viewModel()) {
                     ) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data("https://cdn.dribbble.com/userupload/8543810/file/original-f49cdbe68a5bc08601d004dace88385a.png?crop=239x49-1330x867&resize=400x300&vertical=center")
+                                .data(user.imageUrl)
                                 .placeholder(R.drawable.avatar)
                                 .error(R.drawable.no_image)
                                 .build(),
@@ -97,10 +97,10 @@ fun Users(leaderboardViewModel: LeaderboardViewModel = viewModel()) {
                                 .size(30.dp)
                                 .clip(CircleShape)
                         )
-                        Text(item.fullName)
+                        Text(user.fullName)
                     }
 
-                    Text(text = item.points.toString(), color = MaterialTheme.colorScheme.primary)
+                    Text(text = user.points.toString(), color = MaterialTheme.colorScheme.primary)
                 }
                 HorizontalDivider()
             }

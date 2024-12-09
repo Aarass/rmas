@@ -56,9 +56,9 @@ class UserRepository {
             val documentRef = db.collection(("users")).document(user.uid);
 
             batch
-                .update(documentRef, "name", name)
-                .update(documentRef, "surname", surname)
+                .update(documentRef, "fullName", "$name $surname")
                 .update(documentRef, "phoneNumber", phoneNumber)
+                .update(documentRef, "points", 0)
         }.await()
     }
 
